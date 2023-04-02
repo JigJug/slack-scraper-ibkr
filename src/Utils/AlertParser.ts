@@ -17,8 +17,8 @@ function parseAlert(alert: string){
         price: null
     }
 
-    let strikeIndex = 6
-    let priceIndex = 7
+    let strikeIndex = 6;
+    let priceIndex = 7;
 
     alert = alert.replace(/-/g, '')
     console.log(alert);
@@ -27,9 +27,9 @@ function parseAlert(alert: string){
     console.log(splitAlert);
     console.log(splitAlert.length);
 
-    if(splitAlert[7].indexOf('$') !== -1 ){// && splitAlert.length == 10){
-        strikeIndex += 2;
-        priceIndex += 2;
+    if(splitAlert[7].indexOf('$') === -1 ){// && splitAlert.length == 10){
+        strikeIndex = strikeIndex + 2;
+        priceIndex = priceIndex + 2;
         oprderParam.date = parseInt(splitAlert[7]);
     }
     //} else if(splitAlert.length > 8){
@@ -42,6 +42,8 @@ function parseAlert(alert: string){
     })();
 
     const symbol = splitAlert[5];
+
+    console.log(splitAlert[strikeIndex])
     
     const right = (() => {
         const parse = splitAlert[strikeIndex].match(/C|P/);

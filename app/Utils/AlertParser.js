@@ -14,19 +14,20 @@ function parseAlert(alert) {
     const splitAlert = alert.split(' ');
     console.log(splitAlert);
     console.log(splitAlert.length);
-    if (splitAlert.length > 8 && splitAlert.length == 10) {
-        strikeIndex += 2;
-        priceIndex += 2;
+    if (splitAlert[7].indexOf('$') === -1) { // && splitAlert.length == 10){
+        strikeIndex = strikeIndex + 2;
+        priceIndex = priceIndex + 2;
         oprderParam.date = parseInt(splitAlert[7]);
     }
-    else if (splitAlert.length > 8) {
-        console.log('Parser Error');
-        return null;
-    }
+    //} else if(splitAlert.length > 8){
+    //    console.log('Parser Error');
+    //    return null
+    //}
     const side = (() => {
         return splitAlert[3] == 'BOUGHT' ? 'BUY' : 'SELL';
     })();
     const symbol = splitAlert[5];
+    console.log(splitAlert[strikeIndex]);
     const right = (() => {
         const parse = splitAlert[strikeIndex].match(/C|P/);
         return parse != null ? parse[0] : null;

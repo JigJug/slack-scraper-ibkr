@@ -126,6 +126,8 @@ async function makeHumanAndKickIdle(page: Page, count: Count, lastMessage: strin
         const randMouseWheelUp = Math.random()* (99 - 30) + 30;
         //const randMouseWheelDown = Math.random()* (150 - 300) + 150
         if(count.mouse! > randMouseTime){
+            const ts = timeStamp();
+            console.log(ts)
             console.log(count)
 
             /*console.log(
@@ -151,4 +153,14 @@ async function makeHumanAndKickIdle(page: Page, count: Count, lastMessage: strin
     {
         throw err
     }
+}
+
+function timeStamp(){
+    const date = new Date();
+    const hour = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    const milis = date.getMilliseconds();
+    return `${hour}:${minutes}:${seconds}.${milis}`
+
 }

@@ -1,5 +1,5 @@
 
-async function startIbkr(event, contractDate){
+async function startIbkr(event, contractDate, isRealTime){
     try {
         //load in api, parser and position handler
         const ibkrapi = await import("ib-tws-api-jj");
@@ -53,36 +53,44 @@ async function startIbkr(event, contractDate){
                     strike: orderOptions.strikePrice
                 });
 
+                let price = null;
+
                 //NOW USING THE PRICE FROM ALERT SO IGNORE MARKET DATA
-                //get contract deets to submit for market data snapshot
-                /*const contractDetails = await api.getContractDetails(contract);
+                if(isRealTime){
+                    //get contract deets to submit for market data snapshot
+                    const contractDetails = await api.getContractDetails(contract);
 
-                //format the reply to make request
-                const c = {
-                    contract: contractDetails[0].contract
-                }
+                    //format the reply to make request
+                    const c = {
+                        contract: contractDetails[0].contract
+                    }
 
-                console.log(c);
-                console.log(c.contract.conId);
+                    console.log(c);
+                    console.log(c.contract.conId);
 
-                //await delay(2000)
-                //request market data feed type. 3 is for delayed market data
-                await api.reqMarketDataType(3);
-                console.log('set market data type to: ', api._marketDataType);
-                //await delay(2000)
+                    //request market data feed type. 3 is for delayed market data
+                    await api.reqMarketDataType(3);
+                    console.log('set market data type to: ', api._marketDataType);
                 
-                const marketData = await api.getMarketDataSnapshot(c);
+                    const marketData = await api.getMarketDataSnapshot(c);
 
-                console.log('first order xy: ', marketData);
+                    console.log('first order xy: ', marketData);
 
-                //await delay(5000);
-
-
+                    if('delayedAsk' in marketData){
+                        if(marketData.delayedAsk !== -1)  price = marketData.delayedAsk;
+                        if(marketData.delayedLast !== -1)  price = marketData.delayedLast;
+                    } else if('delayedLast' in marketData){
+                        if(marketData.delayedLast !== -1 && price == null)  price = marketData.delayedLast;
+                    } else {
+                        price = marketData.ask;
+                    }
+                    
+                } else {
+                    price = orderOptions.price;
+                }
+                
                 //set up bracket order
-
                 //get last price and cal % for limit and stop
-                let price = marketData.delayedAsk;*/
-                const price = orderOptions.price;
                 let stopPrice = price * 0.2;
                 let limitPrice = price * 0.3;
 
@@ -96,8 +104,6 @@ async function startIbkr(event, contractDate){
                     contract: contract,
                     order: order
                 });
-
-                //await delay(1000);
                 
                 //get % and make limit sell
                 let pl = price + limitPrice;
@@ -109,14 +115,12 @@ async function startIbkr(event, contractDate){
                     action: "SELL",
                     totalQuantity: 1,
                     lmtPrice: stpPrice1
-                }, false, parentId)
+                }, false, parentId);
 
                 await api.placeOrder({
                     contract: contract,
                     order: orderLimSell
-                })
-
-                //await delay(1000);
+                });
                 
                 //make stop order
                 let ps = price - stopPrice;
@@ -149,7 +153,6 @@ async function startIbkr(event, contractDate){
         console.log(err);
     }
 }
-
 
 
 function delay(time){

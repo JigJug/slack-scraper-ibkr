@@ -1,28 +1,47 @@
 "use strict";
 function parseAlert(alert) {
-    alert = alert.replace('-', '');
+    const oprderParam = {
+        side: null,
+        symbol: null,
+        right: null,
+        strikePrice: null,
+        price: null
+    };
+    let strikeIndex = 6;
+    let priceIndex = 7;
+    alert = alert.replace(/-/g, '');
+    console.log(alert);
     const splitAlert = alert.split(' ');
+    console.log(splitAlert);
+    console.log(splitAlert.length);
+    if (splitAlert.length > 8 && splitAlert.length == 10) {
+        strikeIndex += 2;
+        priceIndex += 2;
+        oprderParam.date = parseInt(splitAlert[7]);
+    }
+    else if (splitAlert.length > 8) {
+        console.log('Parser Error');
+        return null;
+    }
+    const side = (() => {
+        return splitAlert[3] == 'BOUGHT' ? 'BUY' : 'SELL';
+    })();
+    const symbol = splitAlert[5];
     const right = (() => {
-        const parse = splitAlert[4].match(/C|P/);
+        const parse = splitAlert[strikeIndex].match(/C|P/);
         return parse != null ? parse[0] : null;
     })();
-    const strike = parseFloat(splitAlert[4].replace(/C|P/, ''));
-    const side = (() => {
-        return splitAlert[2] == 'BOUGHT' ? 'BUY' : 'SELL';
-    })();
-    const oprderParam = {
-        side: side,
-        symbol: splitAlert[3],
-        right: right,
-        strikePrice: strike,
-        price: parseFloat(splitAlert[5].replace('$', ''))
-    };
+    const strike = parseFloat(splitAlert[strikeIndex].replace(/C|P/, ''));
+    const price = parseFloat(splitAlert[priceIndex].replace('$', ''));
+    oprderParam.side = side;
+    oprderParam.symbol = symbol;
+    oprderParam.right = right;
+    oprderParam.strikePrice = strike;
+    oprderParam.price = price;
     console.log(oprderParam);
-    /*return (
-        oprderParam.side === 'BUY'
+    return (oprderParam.side === 'BUY'
         && typeof oprderParam.strikePrice == 'number'
         && typeof oprderParam.right == 'string'
-        ? oprderParam : null
-    )*/
+        ? oprderParam : null);
 }
 module.exports.parseAlert = parseAlert;

@@ -38,7 +38,12 @@ async function startIbkr(event, contractDate){
                 //price only. so to access the price we will either need to look at making a bracket order an unconventional
                 //way by submitting the parent order, wait, get the execttion details from tws and see the fill price, or,
                 //we can first make a request for delayed market data on the contract, see the last price, then build the 
-                //bracket order from there. 
+                //bracket order from there.
+
+                if(orderOptions.date) {
+                    contractDate = `${contractDate.slice(0, contractDate.length -2)}${orderOptions.date}`
+                    console.log('new contract date found: ', orderOptions.date)
+                }
 
                 //make contract
                 const contract = ibkrapi.Contract.option({
@@ -48,8 +53,9 @@ async function startIbkr(event, contractDate){
                     strike: orderOptions.strikePrice
                 });
 
+                //NOW USING THE PRICE FROM ALERT SO IGNORE MARKET DATA
                 //get contract deets to submit for market data snapshot
-                const contractDetails = await api.getContractDetails(contract);
+                /*const contractDetails = await api.getContractDetails(contract);
 
                 //format the reply to make request
                 const c = {
@@ -75,7 +81,8 @@ async function startIbkr(event, contractDate){
                 //set up bracket order
 
                 //get last price and cal % for limit and stop
-                let price = marketData.delayedAsk;
+                let price = marketData.delayedAsk;*/
+                const price = orderOptions.price;
                 let stopPrice = price * 0.2;
                 let limitPrice = price * 0.3;
 

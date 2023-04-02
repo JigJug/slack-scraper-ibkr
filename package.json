@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "start": "node ./app/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "ib-tws-api-jj": "https://github.com/JigJug/ib-tws-api-jj",
+    "puppeteer": "^19.6.3"
+  }
+}

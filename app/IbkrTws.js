@@ -2,7 +2,7 @@
 async function startIbkr(event, contractDate){
     try {
         //load in api, parser and position handler
-        const ibkrapi = await import("ib-tws-api");
+        const ibkrapi = await import("ib-tws-api-jj");
         const parseAlert = require("./Utils/AlertParser");
         const posH = require("./positionHandler");
 
@@ -11,8 +11,6 @@ async function startIbkr(event, contractDate){
             host: '127.0.0.1',
             port: 7497
         });
-
-        
 
         //alerts events and place order
         event.on('alert', async (message) => {

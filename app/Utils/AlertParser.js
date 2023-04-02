@@ -1,25 +1,28 @@
 "use strict";
 function parseAlert(alert) {
+    alert = alert.replace('-', '');
     const splitAlert = alert.split(' ');
     const right = (() => {
-        const parse = splitAlert[6].match(/C|P/);
+        const parse = splitAlert[4].match(/C|P/);
         return parse != null ? parse[0] : null;
     })();
-    const strike = parseFloat(splitAlert[6].replace(/C|P/, ''));
+    const strike = parseFloat(splitAlert[4].replace(/C|P/, ''));
     const side = (() => {
-        return splitAlert[3] == 'BOUGHT' ? 'BUY' : 'SELL';
+        return splitAlert[2] == 'BOUGHT' ? 'BUY' : 'SELL';
     })();
     const oprderParam = {
         side: side,
-        symbol: splitAlert[5],
+        symbol: splitAlert[3],
         right: right,
         strikePrice: strike,
-        //bidAsk: parseFloat(splitAlert[7].replace('$', ''))
+        price: parseFloat(splitAlert[5].replace('$', ''))
     };
     console.log(oprderParam);
-    return (oprderParam.side === 'BUY'
+    /*return (
+        oprderParam.side === 'BUY'
         && typeof oprderParam.strikePrice == 'number'
         && typeof oprderParam.right == 'string'
-        ? oprderParam : null);
+        ? oprderParam : null
+    )*/
 }
 module.exports.parseAlert = parseAlert;

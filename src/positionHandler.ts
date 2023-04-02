@@ -1,4 +1,4 @@
-import { Client, Contract } from "ib-tws-api";
+import { Client, Contract } from "ib-tws-api-jj";
 
 class PositionHandler {
 

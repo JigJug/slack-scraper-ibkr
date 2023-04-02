@@ -34,10 +34,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.req = void 0;
 const https = __importStar(require("https"));
-//import * as dotenv from "dotenv"
-//dotenv.config();
-//const PPACCNAME = process.env.PAPER_ACC_NAME
-//const PPACCNO = process.env.DU6613006
 function req(options, write, body) {
     return __awaiter(this, void 0, void 0, function* () {
         try {

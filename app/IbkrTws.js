@@ -83,7 +83,7 @@ async function startIbkr(event, contractDate, isRealTime){
                         if(marketData.delayedLast !== -1 && price == null)  price = marketData.delayedLast;
                     } else {
                         price = marketData.ask;
-                    }
+                    } 
                     
                 } else {
                     price = orderOptions.price;

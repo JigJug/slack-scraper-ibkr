@@ -1,5 +1,11 @@
 
-async function startIbkr(event, contractDate, isRealTime){
+async function startIbkr(event, configs){
+
+    const contractDate = configs.contractDate;
+    const isRealTime = configs.realTimeData;
+    let orderSize = configs.orderSize;
+    const maxOrder = configs.maxOrder;
+
     try {
         //load in api, parser and position handler
         const ibkrapi = await import("ib-tws-api-jj");
@@ -88,16 +94,19 @@ async function startIbkr(event, contractDate, isRealTime){
                 } else {
                     price = orderOptions.price;
                 }
+
+                //calc ordersize
+                if((price * 100) > maxOrder) orderSize = 1;
                 
                 //set up bracket order
                 //get last price and cal % for limit and stop
-                let stopPrice = price * 0.2;
-                let limitPrice = price * 0.3;
+                let stopPrice = price * configs.stopLoss;
+                let limitPrice = price * configs.proffitTaker;
 
                 //market order
                 const order = ibkrapi.Order.market({
                     action: orderOptions.side,
-                    totalQuantity: 1
+                    totalQuantity: orderSize
                 }, false);
 
                 const parentId = await api.placeOrder({

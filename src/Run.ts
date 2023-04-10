@@ -1,14 +1,9 @@
 import { getFeed } from "./SlackScraper/ScrapePage";
 import { launchBrowser } from "./SlackScraper/LaunchBrowser";
 import { loginToSlack } from "./SlackScraper/Login";
-import * as dotenv from "dotenv"
 import events from "events"
+import { ScraperConfig } from "./typings";
 
-dotenv.config();
-const HEADLESS_MODE = process.env.HEADLESS_MODE;
-let mode: boolean
-if(HEADLESS_MODE == "true") mode = true;
-else mode = false;
 
 //looks like we need to do last message seen. so record the last message on first scrape
 //then keep passing it to the recursive function .. when it changes then check if its an alert.
@@ -17,9 +12,9 @@ else mode = false;
 
 
 
-export async function runScraper (event: events){
+export async function runScraper (event: events, configs: ScraperConfig){
     try{
-        const lb = await launchBrowser(mode);
+        const lb = await launchBrowser(configs.headlessMode);
 
         await loginToSlack(lb.page, 200000);
 

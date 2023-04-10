@@ -1,0 +1,16 @@
+{
+    "scraperConfig" : {
+        "headlessMode" : true
+    },
+    "ibkrConfig" : {
+        "orderSize" : 2,
+        "lotto" : 1,
+        "maxOrder" : 600,
+        "stopLoss" : 0.2,
+        "proffitTaker" : 0.3,
+        "stopOrder" : true,
+        "profitTaker" : true,
+        "contractDate" : "20230406",
+        "realTimeData" : true
+    }
+}

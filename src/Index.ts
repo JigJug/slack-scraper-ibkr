@@ -1,24 +1,42 @@
 import { runScraper } from "./Run";
 import events from "events"
 import { startIbkr, positionTracker } from "./IbkrTws";
-import * as dotenv from "dotenv"
-dotenv.config();
-
-const CONTRACT_DATE = process.env.CONTRACT_DATE;
-console.log('contract date: ', CONTRACT_DATE)
-
-const REAL_TIME_DATA = process.env.REAL_TIME_DATA;
-let mode: boolean
-if(REAL_TIME_DATA == "true") mode = true;
-else mode = false;
-console.log('mode: realtime: ',mode)
+import * as fs from 'fs'
+import * as path from 'path'
 
 const event = new events();
 
+async function loadConfigs () {
+  try {
+    const rootDir = path.resolve(__dirname);
+    const configsRaw = fs.readFileSync(`${rootDir}\\config.json`);
+    console.log(configsRaw)
+    const configs = JSON.parse(configsRaw.toString());
+    console.log(configs)
+    return configs
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function startProgram (event: events) {
+  try {
+    const configs = await loadConfigs();
+    await Promise.all(
+      [
+        runScraper(event, configs.scraperConfig),
+        startIbkr(event, configs.ibkrConfig)
+      ]
+    );
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+startProgram(event);
 
 //start scraping
-runScraper(event);
+//runScraper(event, configs);
 
 //listen for alerts
-startIbkr(event, CONTRACT_DATE, mode);
-
+//startIbkr(event, configs);

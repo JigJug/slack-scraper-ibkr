@@ -96,7 +96,7 @@ async function startIbkr(event, configs){
                 }
 
                 //calc ordersize
-                if((price * 100) > maxOrder) orderSize = 1;
+                if((price * orderSize * 100) > maxOrder) orderSize = 1;
                 
                 //set up bracket order
                 //get last price and cal % for limit and stop

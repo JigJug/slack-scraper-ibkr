@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node ./index.js"
+    "start": "node ./app/index.js"
   },
   "devDependencies": {
     "typescript": "^4.9.5"

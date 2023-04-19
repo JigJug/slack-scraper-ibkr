@@ -10,7 +10,7 @@
         "proffitTaker" : 0.3,
         "stopOrder" : true,
         "profitTaker" : true,
-        "contractDate" : "20230406",
+        "contractDate" : "20230421",
         "realTimeData" : true
     }
 }

@@ -22,6 +22,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -29,19 +38,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Run_1 = require("./Run");
 const events_1 = __importDefault(require("events"));
 const IbkrTws_1 = require("./IbkrTws");
-const dotenv = __importStar(require("dotenv"));
-dotenv.config();
-const CONTRACT_DATE = process.env.CONTRACT_DATE;
-console.log('contract date: ', CONTRACT_DATE);
-const REAL_TIME_DATA = process.env.REAL_TIME_DATA;
-let mode;
-if (REAL_TIME_DATA == "true")
-    mode = true;
-else
-    mode = false;
-console.log('mode: realtime: ', mode);
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 const event = new events_1.default();
+function loadConfigs() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const rootDir = path.resolve(__dirname);
+            const configsRaw = fs.readFileSync(`${rootDir}\\config.json`);
+            console.log(configsRaw);
+            const configs = JSON.parse(configsRaw.toString());
+            console.log(configs);
+            return configs;
+        }
+        catch (err) {
+            throw err;
+        }
+    });
+}
+function startProgram(event) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const configs = yield loadConfigs();
+            yield Promise.all([
+                (0, Run_1.runScraper)(event, configs.scraperConfig),
+                (0, IbkrTws_1.startIbkr)(event, configs.ibkrConfig)
+            ]);
+        }
+        catch (err) {
+            console.log(err);
+        }
+    });
+}
+startProgram(event);
 //start scraping
-(0, Run_1.runScraper)(event);
+//runScraper(event, configs);
 //listen for alerts
-(0, IbkrTws_1.startIbkr)(event, CONTRACT_DATE, mode);
+//startIbkr(event, configs);

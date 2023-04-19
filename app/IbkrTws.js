@@ -99,10 +99,6 @@ async function startIbkr(event, configs){
                 if((price * orderSize * 100) > maxOrder) orderSize = 1;
                 
                 //set up bracket order
-                //get last price and cal % for limit and stop
-                let stopPrice = price * configs.stopLoss;
-                let limitPrice = price * configs.proffitTaker;
-
                 //market order
                 const order = ibkrapi.Order.market({
                     action: orderOptions.side,
@@ -113,17 +109,22 @@ async function startIbkr(event, configs){
                     contract: contract,
                     order: order
                 });
+
+                //get price and cal % diff for limit and stop
+                let stopPriceDelta = price * configs.stopLoss;
+                let limitPriceDelta = price * configs.proffitTaker;
                 
                 //get % and make limit sell
-                let pl = price + limitPrice;
-                let stpPrice11 = parseFloat(pl).toFixed(2);
-                let stpPrice1 = parseFloat(stpPrice11);
-                console.log('stpprice1 ... ', stpPrice1);
+                let limitPriceFloat = price + limitPriceDelta;
+                let limitPrice2DpStr = parseFloat(limitPriceFloat).toFixed(2);
+                let limitPrice = parseFloat(limitPrice2DpStr);
+                if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
+                console.log('limitSellPrice ... ', limitPrice);
                 
                 const orderLimSell = ibkrapi.Order.limit({
                     action: "SELL",
-                    totalQuantity: 1,
-                    lmtPrice: stpPrice1
+                    totalQuantity: orderSize,
+                    lmtPrice: limitPrice
                 }, false, parentId);
 
                 await api.placeOrder({
@@ -132,15 +133,16 @@ async function startIbkr(event, configs){
                 });
                 
                 //make stop order
-                let ps = price - stopPrice;
-                let stpPricee = parseFloat(ps).toFixed(2);
-                let stpPrice = parseFloat(stpPricee);
-                console.log('stop price... ', stpPrice);
+                let stopPriceFloat = price - stopPriceDelta;
+                let stopPrice2DpStr = parseFloat(stopPriceFloat).toFixed(2);
+                let stopPrice = parseFloat(stopPrice2DpStr);
+                if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
+                console.log('stop price... ', stopPrice);
                 
                 const orderStop = ibkrapi.Order.stop({
                     action: "SELL",
-                    totalQuantity: 1,
-                    auxPrice: stpPrice
+                    totalQuantity: orderSize,
+                    auxPrice: stopPrice
                 }, true, parentId);
 
                 await api.placeOrder({
@@ -170,6 +172,10 @@ function delay(time){
             resolve()
         }, time)
     })
+}
+
+function modSpxProfitLossPrice (price) {
+    return Math.round(price * 10) / 10;
 }
 
 module.exports.startIbkr = startIbkr

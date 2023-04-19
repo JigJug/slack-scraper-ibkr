@@ -1,7 +1,7 @@
 
 async function startIbkr(event, configs){
 
-    const contractDate = configs.contractDate;
+    let contractDate = configs.contractDate;
     const isRealTime = configs.realTimeData;
     let orderSize = configs.orderSize;
     const maxOrder = configs.maxOrder;

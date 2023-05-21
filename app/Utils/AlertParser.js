@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 function parseAlert(alert) {
     const oprderParam = {
         side: null,

@@ -37,7 +37,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Run_1 = require("./Run");
 const events_1 = __importDefault(require("events"));
-const IbkrTws_1 = require("./IbkrTws");
+//import { startIbkr, positionTracker } from "./IbkrTws";
+//import { startIbkr} from "./test.mjs";
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const event = new events_1.default();
@@ -59,10 +60,11 @@ function loadConfigs() {
 function startProgram(event) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            const sibk = yield import("./test.mjs");
             const configs = yield loadConfigs();
             yield Promise.all([
                 (0, Run_1.runScraper)(event, configs.scraperConfig),
-                (0, IbkrTws_1.startIbkr)(event, configs.ibkrConfig)
+                sibk.startIbkr(event, configs.ibkrConfig)
             ]);
         }
         catch (err) {

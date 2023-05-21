@@ -1,5 +1,7 @@
+import { Client, Contract, Order } from "ib-tws-api-jj";
+import events from "events"
 
-async function startIbkr(event, configs){
+export async function startIbkr(event: events, configs: any){
 
     let contractDate = configs.contractDate;
     const isRealTime = configs.realTimeData;
@@ -8,12 +10,12 @@ async function startIbkr(event, configs){
 
     try {
         //load in api, parser and position handler
-        const ibkrapi = await import("ib-tws-api-jj");
+        //const ibkrapi = await import("ib-tws-api-jj");
         const parseAlert = require("./Utils/AlertParser");
         const posH = require("./positionHandler");
 
         //start client
-        const api = new ibkrapi.Client({
+        const api = new Client({
             host: '127.0.0.1',
             port: 7497
         });
@@ -26,7 +28,7 @@ async function startIbkr(event, configs){
 
                 if(!orderOptions) return
 
-                console.log('Received ALERT: ', message, '\nplacing order... ');
+                console.log('Recieved ALERT: ', message, '\nplacing order... ');
                 console.log('parsed order orderOptions:::: ', orderOptions);
 
                 let time = await api.getCurrentTime();
@@ -52,7 +54,7 @@ async function startIbkr(event, configs){
                 }
 
                 //make contract
-                const contract = ibkrapi.Contract.option({
+                const contract = Contract.option({
                     symbol: orderOptions.symbol,
                     right: orderOptions.right,
                     lastTradeDateOrContractMonth: contractDate,
@@ -65,8 +67,6 @@ async function startIbkr(event, configs){
                 if(isRealTime){
                     //get contract deets to submit for market data snapshot
                     const contractDetails = await api.getContractDetails(contract);
-
-                    
 
                     //format the reply to make request
                     const c = {
@@ -102,7 +102,7 @@ async function startIbkr(event, configs){
                 
                 //set up bracket order
                 //market order
-                const order = ibkrapi.Order.market({
+                const order = Order.market({
                     action: orderOptions.side,
                     totalQuantity: orderSize
                 }, false);
@@ -123,7 +123,7 @@ async function startIbkr(event, configs){
                 if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
                 console.log('limitSellPrice ... ', limitPrice);
                 
-                const orderLimSell = ibkrapi.Order.limit({
+                const orderLimSell = Order.limit({
                     action: "SELL",
                     totalQuantity: orderSize,
                     lmtPrice: limitPrice
@@ -141,7 +141,7 @@ async function startIbkr(event, configs){
                 if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
                 console.log('stop price... ', stopPrice);
                 
-                const orderStop = ibkrapi.Order.stop({
+                const orderStop = Order.stop({
                     action: "SELL",
                     totalQuantity: orderSize,
                     auxPrice: stopPrice
@@ -168,16 +168,16 @@ async function startIbkr(event, configs){
 }
 
 
-function delay(time){
-    return new Promise((resolve) => {
+function delay(time: number){
+    return new Promise<void>((resolve) => {
         setTimeout(() => {
             resolve()
         }, time)
     })
 }
 
-function modSpxProfitLossPrice (price) {
+function modSpxProfitLossPrice (price: number) {
     return Math.round(price * 10) / 10;
 }
 
-module.exports.startIbkr = startIbkr
+//module.exports.startIbkr = startIbkr

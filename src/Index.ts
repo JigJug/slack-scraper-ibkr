@@ -1,6 +1,7 @@
 import { runScraper } from "./Run";
 import events from "events"
-import { startIbkr, positionTracker } from "./IbkrTws";
+//import { startIbkr, positionTracker } from "./IbkrTws";
+//import { startIbkr} from "./test.mjs";
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -21,11 +22,12 @@ async function loadConfigs () {
 
 async function startProgram (event: events) {
   try {
+    const sibk = await import("./test.mjs")
     const configs = await loadConfigs();
     await Promise.all(
       [
         runScraper(event, configs.scraperConfig),
-        startIbkr(event, configs.ibkrConfig)
+        sibk.startIbkr(event, configs.ibkrConfig)
       ]
     );
   } catch (err) {

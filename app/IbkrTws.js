@@ -1,9 +1,10 @@
 //to make a bracket order we need to send an untransmitted parent order first so it will sit on tws but not
 //send to the servers. once the parent order is sent, tws returns an order id. the order id is then passed to the 
-//limit and stop order so they can be attached to the parent order as child orders. after the parent order is
-//submitted we need to send an untransmitted limit sell order for tp. finally send the stop
-//order with transmit set to true. with the last orders transmit is set to true, tws will understand this as
-//a bracket order and automatiaclly process the parent order and transmit the child limit tp order. 
+//limit and stop order so they can be attached to the parent order as child orders...
+
+//after the parent order is submitted, we need to send an untransmitted limit sell order for tp. finally send the stop
+//order with transmit set to true. when the final orders transmit is set to true, tws will understand this as
+//a bracket order and automatiaclly process the parent order and transmit the child limit tp order.
 
 //tws api does not have functionality to access the automated bracket order preset options settings..
 //there is also no option to submit the bracket child tp and stop orders placement percentage and requires

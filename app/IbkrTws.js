@@ -53,7 +53,7 @@ async function startIbkr(event, configs){
                 //----- maybe we need to first check the contrat if its there
                 const contract = makeContract(ibkrapi, orderOptions, contractDate);
 
-                //NOW USING THE PRICE FROM ALERT SO IGNORE MARKET DATA
+                //get realtime price
                 if(isRealTime) price = await getRealtimePrice(api, contract, price);
                 else price = orderOptions.price;
 

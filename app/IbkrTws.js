@@ -13,103 +13,6 @@
 //we can first make a request for delayed market data on the contract, see the last price, then build the 
 //bracket order from there.
 
-async function startIbkr(event, configs){
-
-    let contractDate = configs.contractDate;
-    const isRealTime = configs.realTimeData;
-    let orderSize = configs.orderSize;
-    const maxOrder = configs.maxOrder;
-
-    try {
-        //load in api, parser and position handler
-        const ibkrapi = await import("ib-tws-api-jj");
-        const parseAlert = require("./Utils/AlertParser");
-        //const posH = require("./positionHandler");
-
-        //start client
-        const api = new ibkrapi.Client({
-            host: '127.0.0.1',
-            port: 7497
-        });
-
-        //alerts events and place order
-        event.on('alert', async (message) => {
-            try {
-                let price = null;
-
-                //parse alert
-                const orderOptions = parseAlert.parseAlert(message);
-
-                if(!orderOptions) return
-
-                alertUser();
-
-                if(orderOptions.date) {
-                    contractDate = `${contractDate.slice(0, contractDate.length -2)}${orderOptions.date}`;
-                    console.log('new contract date found: ', orderOptions.date);
-                }
-
-                //make contract
-                //----- maybe we need to first check the contrat if its there
-                const contract = makeContract(ibkrapi, orderOptions, contractDate);
-
-                //get realtime price
-                if(isRealTime) price = await getRealtimePrice(api, contract, price);
-                else price = orderOptions.price;
-
-                //calc ordersize
-                if((price * orderSize * 100) > maxOrder) orderSize = 1;
-                
-                //set up bracket order
-                //market order
-                const order = ibkrapi.Order.market({
-                    action: orderOptions.side,
-                    totalQuantity: orderSize
-                }, false);
-
-                const parentId = await api.placeOrder({
-                    contract: contract,
-                    order: order
-                });
-
-                //make limit sell order
-                const limitPrice = getProfitTaker(orderOptions, price, configs);
-                
-                const orderLimSell = ibkrapi.Order.limit({
-                    action: "SELL",
-                    totalQuantity: orderSize,
-                    lmtPrice: limitPrice
-                }, false, parentId);
-
-                await api.placeOrder({
-                    contract: contract,
-                    order: orderLimSell
-                });
-                
-                //make stop order
-                const stopPrice = getStop(orderOptions, price, configs);
-                
-                const orderStop = ibkrapi.Order.stop({
-                    action: "SELL",
-                    totalQuantity: orderSize,
-                    auxPrice: stopPrice
-                }, true, parentId);
-
-                await api.placeOrder({
-                    contract: contract,
-                    order: orderStop
-                });
-
-                console.log('Orders Sent...');
-
-            } catch (err) {
-                console.log(err);
-            }
-        });
-    } catch (err) {
-        console.log(err);
-    }
-}
 
 /**
  * Get the contract from twsapi
@@ -119,12 +22,12 @@ async function startIbkr(event, configs){
  * @returns ibkr option contract
  */
 function makeContract(ibkrapi, orderOptions, contractDate) {
-    return ibkrapi.Contract.option({
-        symbol: orderOptions.symbol,
-        right: orderOptions.right,
-        lastTradeDateOrContractMonth: contractDate,
-        strike: orderOptions.strikePrice
-    });
+	return ibkrapi.Contract.option({
+		symbol: orderOptions.symbol,
+		right: orderOptions.right,
+		lastTradeDateOrContractMonth: contractDate,
+		strike: orderOptions.strikePrice
+	});
 }
 
 /**
@@ -141,82 +44,203 @@ function makeContract(ibkrapi, orderOptions, contractDate) {
  * @param {Number} price 
  * @returns price
  */
-async function getRealtimePrice (api, contract, price) {
-    try {
-        //get contract deets to submit for market data snapshot
-        const contractDetails = await api.getContractDetails(contract);
+async function getRealtimePrice (api, contract) {
+	try {
+		//get contract deets to submit for market data snapshot
+		const contractDetails = await api.getContractDetails(contract);
 
-        //format the reply to make request
-        const c = {
-            contract: contractDetails[0].contract
-        }
+		//format the reply to make request
+		//const c = {
+		//	contract: contractDetails[0].contract
+		//}
 
-        console.log(c);
-        console.log(c.contract.conId);
+		console.log('contract: ', contractDetails[0].contract);
 
-        await api.reqMarketDataType(3);
-        console.log('set market data type to: ', api._marketDataType);
-    
-        const marketData = await api.getMarketDataSnapshot(c);
+		await api.reqMarketDataType(3);
 
-        console.log('market data: ', marketData);
+		const marketData = await api.getMarketDataSnapshot({
+			contract: contractDetails[0].contract
+		});
 
-        if('delayedAsk' in marketData){
-            if(marketData.delayedAsk !== -1)  price = marketData.delayedAsk;
-            if(marketData.delayedLast !== -1)  price = marketData.delayedLast;
-        } else if('delayedLast' in marketData){
-            if(marketData.delayedLast !== -1 && price == null)  price = marketData.delayedLast;
-        } else {
-            price = marketData.ask;
-        }
-        return price;
-    } catch (err) {
-        throw err
-    }
+		console.log('market data: ', marketData);
+
+		if('ask' in marketData) return marketData.ask;
+		if('delayedAsk' in marketData) {
+			if(marketData.delayedAsk !== -1) return marketData.delayedAsk;
+		}
+		if('delayedLast' in marketData) {
+			if(marketData.delayedLast !== -1) return marketData.delayedLast;
+		}
+		throw new Error('Could not get price');
+
+	} catch (err) {
+		throw err
+	}
 
 }
 
 function modSpxProfitLossPrice (price) {
-    return Math.round(price * 10) / 10;
+  return Math.round(price * 10) / 10;
 }
 
-function getStop (orderOptions, price, configs) {
-    let stopPriceDelta = 0;
-    if(orderOptions.symbol === 'SPX') stopPriceDelta = price * configs.stopLossSpx;
-    else stopPriceDelta = price * configs.stopLoss;
-    let stopPriceFloat = price - stopPriceDelta;
-    let stopPrice2DpStr = parseFloat(stopPriceFloat).toFixed(2);
-    let stopPrice = parseFloat(stopPrice2DpStr);
-    if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
-    console.log('stop price... ', stopPrice);
-    return stopPrice;
+function getStopPrice(orderOptions, price, configs) {
+	let stopPriceDelta = 0;
+	if(orderOptions.symbol === 'SPX') stopPriceDelta = price * configs.stopLossSpx;
+	else stopPriceDelta = price * configs.stopLoss;
+	let stopPriceFloat = price - stopPriceDelta;
+	let stopPrice2DpStr = parseFloat(stopPriceFloat).toFixed(2);
+	let stopPrice = parseFloat(stopPrice2DpStr);
+	if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
+	console.log('stop price... ', stopPrice);
+	return stopPrice;
 }
 
-function getProfitTaker(orderOptions, price, configs) {
-    let limitPriceDelta = 0;
-    if(orderOptions.symbol === 'SPX') limitPriceDelta = price * configs.proffitTakerSpx;
-    else limitPriceDelta = price * configs.proffitTaker;
-    let limitPriceFloat = price + limitPriceDelta;
-    let limitPrice2DpStr = parseFloat(limitPriceFloat).toFixed(2);
-    let limitPrice = parseFloat(limitPrice2DpStr);
-    if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
-    console.log('limitSellPrice ... ', limitPrice);
-    return limitPrice;
+function getProfitTakerPrice(orderOptions, price, configs) {
+	let limitPriceDelta = 0;
+	if(orderOptions.symbol === 'SPX') limitPriceDelta = price * configs.proffitTakerSpx;
+	else limitPriceDelta = price * configs.proffitTaker;
+	let limitPriceFloat = price + limitPriceDelta;
+	let limitPrice2DpStr = parseFloat(limitPriceFloat).toFixed(2);
+	let limitPrice = parseFloat(limitPrice2DpStr);
+	if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
+	console.log('limitSellPrice ... ', limitPrice);
+	return limitPrice;
 }
 
 function alertUser(){
-    console.log('Received ALERT: ', message, '\nplacing order... ');
-    console.log('parsed order orderOptions:::: ', orderOptions);
-    //let time = await api.getCurrentTime();
-    //console.log('current time: ' + time);
+	console.log('Received ALERT: ', message, '\nplacing order... ');
+	console.log('parsed order orderOptions:::: ', orderOptions);
+	//let time = await api.getCurrentTime();
+	//console.log('current time: ' + time);
 }
 
 function delay(time){
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve()
-        }, time)
-    })
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			resolve()
+		}, time)
+	})
+}
+
+async function startIbkr(event, configs){
+
+	let contractDate = configs.contractDate;
+	const isRealTime = configs.realTimeData;
+	let orderSize = configs.orderSize;
+	const maxOrder = configs.maxOrder;
+
+	try {
+		//load in api, parser and position handler
+		const ibkrapi = await import("ib-tws-api-jj");
+		const parseAlert = require("./Utils/AlertParser");
+		//const posH = require("./positionHandler");
+
+		//start client
+		const api = new ibkrapi.Client({
+			host: '127.0.0.1',
+			port: 7497
+		});
+
+		//alerts events and place order
+		event.on('alert', async (message) => {
+			try {
+
+				//parse alert
+				const orderOptions = parseAlert.parseAlert(message);
+
+				if(!orderOptions) return
+
+				alertUser();
+
+				if(orderOptions.date) {
+					contractDate = `${contractDate.slice(0, contractDate.length -2)}${orderOptions.date}`;
+					console.log('new contract date found: ', orderOptions.date);
+				}
+
+				//make contract
+				//----- maybe we need to first check the contrat if its there
+				const contract = makeContract(ibkrapi, orderOptions, contractDate);
+				let price = null;
+				//get realtime price
+				if(isRealTime) price = await getRealtimePrice(api, contract, price);
+				else price = orderOptions.price;
+
+				//calc ordersize
+				if((price * orderSize * 100) > maxOrder) orderSize = 1;
+				
+				//set up bracket order
+				//market order
+				const order = ibkrapi.Order.market({
+					action: orderOptions.side,
+					totalQuantity: orderSize
+				}, false);
+
+				const parentId = await api.placeOrder({
+					contract: contract,
+					order: order
+				});
+
+				//make limit sell order
+				const limitPrice = getProfitTakerPrice(orderOptions, price, configs);
+				
+				const orderLimSell = ibkrapi.Order.limit({
+					action: "SELL",
+					totalQuantity: orderSize,
+					lmtPrice: limitPrice
+				}, false, parentId);
+
+				await api.placeOrder({
+					contract: contract,
+					order: orderLimSell
+				});
+				
+				//make stop order
+				const stopPrice = getStopPrice(orderOptions, price, configs);
+
+				const orderStop = (() => {
+					if(configs.trailingStop) {
+						return ibkrapi.Order.trail({
+							action: "SELL",
+							totalQuantity: orderSize,
+							auxPrice: stopPrice,
+							adjustableTrailingUnit: configs.adjustableTrailingUnit
+						}, true, parentId);
+					} else {
+						return ibkrapi.Order.stop({
+							action: "SELL",
+							totalQuantity: orderSize,
+							auxPrice: stopPrice
+						}, true, parentId);
+					}
+				})();
+
+				await api.placeOrder({
+					contract: contract,
+					order: orderStop
+				});
+				
+				/*const orderStop = ibkrapi.Order.stop({
+					action: "SELL",
+					totalQuantity: orderSize,
+					auxPrice: stopPrice
+				}, true, parentId);
+
+				const orderStopTrail = ibkrapi.Order.trail({
+					action: "SELL",
+					totalQuantity: orderSize,
+					auxPrice: stopPrice,
+					adjustableTrailingUnit: configs.adjustableTrailingUnit
+				}, true, parentId);*/
+
+				console.log('Orders Sent...');
+
+			} catch (err) {
+				console.log(err);
+			}
+		});
+	} catch (err) {
+		console.log(err);
+	}
 }
 
 module.exports.startIbkr = startIbkr

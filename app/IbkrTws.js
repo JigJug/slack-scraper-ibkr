@@ -1,3 +1,16 @@
+//to make a bracket order we need to send an untransmitted parent order first so it will sit on tws but not
+//send to the servers. once the parent order is sent, tws returns an order id. the order id is then passed to the 
+//limit and stop order so they can be attached to the parent order as child orders. after the parent order is
+//submitted we need to send an untransmitted limit sell order for tp. finally send the stop
+//order with transmit set to true. with the last orders transmit is set to true, tws will understand this as
+//a bracket order and automatiaclly process the parent order and transmit the child limit tp order. 
+
+//tws api does not have functionality to access the automated bracket order preset options settings..
+//there is also no option to submit the bracket child tp and stop orders placement percentage and requires
+//price only. so to access the price we will either need to look at making a bracket order an unconventional
+//way by submitting the parent order, wait, get the execttion details from tws and see the fill price, or,
+//we can first make a request for delayed market data on the contract, see the last price, then build the 
+//bracket order from there.
 
 async function startIbkr(event, configs){
 
@@ -10,7 +23,7 @@ async function startIbkr(event, configs){
         //load in api, parser and position handler
         const ibkrapi = await import("ib-tws-api-jj");
         const parseAlert = require("./Utils/AlertParser");
-        const posH = require("./positionHandler");
+        //const posH = require("./positionHandler");
 
         //start client
         const api = new ibkrapi.Client({
@@ -21,81 +34,27 @@ async function startIbkr(event, configs){
         //alerts events and place order
         event.on('alert', async (message) => {
             try {
+                let price = null;
+
                 //parse alert
                 const orderOptions = parseAlert.parseAlert(message);
 
                 if(!orderOptions) return
 
-                console.log('Received ALERT: ', message, '\nplacing order... ');
-                console.log('parsed order orderOptions:::: ', orderOptions);
-
-                let time = await api.getCurrentTime();
-                console.log('current time: ' + time);
-
-                //to make a bracket order we need to send an untransmitted parent order first so it will sit on tws but not
-                //send to the servers. once the parent order is sent, tws returns an order id. the order id is then passed to the 
-                //limit and stop order so they can be attached to the parent order as child orders. after the parent order is
-                //submitted we need to send an untransmitted limit sell order for tp. finally send the stop
-                //order with transmit set to true. with the last orders transmit is set to true, tws will understand this as
-                //a bracket order and automatiaclly process the parent order and transmit the child limit tp order. 
-
-                //tws api does not have functionality to access the automated bracket order preset options settings..
-                //there is also no option to submit the bracket child tp and stop orders placement percentage and requires
-                //price only. so to access the price we will either need to look at making a bracket order an unconventional
-                //way by submitting the parent order, wait, get the execttion details from tws and see the fill price, or,
-                //we can first make a request for delayed market data on the contract, see the last price, then build the 
-                //bracket order from there.
+                alertUser();
 
                 if(orderOptions.date) {
-                    contractDate = `${contractDate.slice(0, contractDate.length -2)}${orderOptions.date}`
-                    console.log('new contract date found: ', orderOptions.date)
+                    contractDate = `${contractDate.slice(0, contractDate.length -2)}${orderOptions.date}`;
+                    console.log('new contract date found: ', orderOptions.date);
                 }
 
                 //make contract
-                const contract = ibkrapi.Contract.option({
-                    symbol: orderOptions.symbol,
-                    right: orderOptions.right,
-                    lastTradeDateOrContractMonth: contractDate,
-                    strike: orderOptions.strikePrice
-                });
-
-                let price = null;
+                //----- maybe we need to first check the contrat if its there
+                const contract = makeContract(ibkrapi, orderOptions, contractDate);
 
                 //NOW USING THE PRICE FROM ALERT SO IGNORE MARKET DATA
-                if(isRealTime){
-                    //get contract deets to submit for market data snapshot
-                    const contractDetails = await api.getContractDetails(contract);
-
-                    
-
-                    //format the reply to make request
-                    const c = {
-                        contract: contractDetails[0].contract
-                    }
-
-                    console.log(c);
-                    console.log(c.contract.conId);
-
-                    //request market data feed type. 3 is for delayed market data
-                    await api.reqMarketDataType(3);
-                    console.log('set market data type to: ', api._marketDataType);
-                
-                    const marketData = await api.getMarketDataSnapshot(c);
-
-                    console.log('first order xy: ', marketData);
-
-                    if('delayedAsk' in marketData){
-                        if(marketData.delayedAsk !== -1)  price = marketData.delayedAsk;
-                        if(marketData.delayedLast !== -1)  price = marketData.delayedLast;
-                    } else if('delayedLast' in marketData){
-                        if(marketData.delayedLast !== -1 && price == null)  price = marketData.delayedLast;
-                    } else {
-                        price = marketData.ask;
-                    } 
-                    
-                } else {
-                    price = orderOptions.price;
-                }
+                if(isRealTime) price = await getRealtimePrice(api, contract, price);
+                else price = orderOptions.price;
 
                 //calc ordersize
                 if((price * orderSize * 100) > maxOrder) orderSize = 1;
@@ -112,16 +71,8 @@ async function startIbkr(event, configs){
                     order: order
                 });
 
-                //get price and cal % diff for limit and stop
-                let stopPriceDelta = price * configs.stopLoss;
-                let limitPriceDelta = price * configs.proffitTaker;
-                
-                //get % and make limit sell
-                let limitPriceFloat = price + limitPriceDelta;
-                let limitPrice2DpStr = parseFloat(limitPriceFloat).toFixed(2);
-                let limitPrice = parseFloat(limitPrice2DpStr);
-                if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
-                console.log('limitSellPrice ... ', limitPrice);
+                //make limit sell order
+                const limitPrice = getProfitTaker(orderOptions, price, configs);
                 
                 const orderLimSell = ibkrapi.Order.limit({
                     action: "SELL",
@@ -135,11 +86,7 @@ async function startIbkr(event, configs){
                 });
                 
                 //make stop order
-                let stopPriceFloat = price - stopPriceDelta;
-                let stopPrice2DpStr = parseFloat(stopPriceFloat).toFixed(2);
-                let stopPrice = parseFloat(stopPrice2DpStr);
-                if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
-                console.log('stop price... ', stopPrice);
+                const stopPrice = getStop(orderOptions, price, configs);
                 
                 const orderStop = ibkrapi.Order.stop({
                     action: "SELL",
@@ -152,21 +99,116 @@ async function startIbkr(event, configs){
                     order: orderStop
                 });
 
-                
                 console.log('Orders Sent...');
 
             } catch (err) {
                 console.log(err);
             }
-            
         });
-
-
     } catch (err) {
         console.log(err);
     }
 }
 
+/**
+ * Get the contract from twsapi
+ * @param {ibkrapi} ibkrapi 
+ * @param {orderOptions} orderOptions 
+ * @param {string} contractDate 
+ * @returns ibkr option contract
+ */
+function makeContract(ibkrapi, orderOptions, contractDate) {
+    return ibkrapi.Contract.option({
+        symbol: orderOptions.symbol,
+        right: orderOptions.right,
+        lastTradeDateOrContractMonth: contractDate,
+        strike: orderOptions.strikePrice
+    });
+}
+
+/**
+ * Gets the current market price of contract to calc stoploss and limit sell to attach to parent order.
+ * If we are running in realtime we need to request the contract details from twsapi and then request a
+ * market data snapshot.
+ * First set the market data type to 3 which is delayed market data.. tws will automatically switch
+ * to realtime data if the user has the data subscription.
+ * Call to api for market data snapshot.
+ * Check if the returned snapshot is delayed or realtime data by checking the object properties.
+ * 
+ * @param {Client} api 
+ * @param {Contract} contract 
+ * @param {Number} price 
+ * @returns price
+ */
+async function getRealtimePrice (api, contract, price) {
+    try {
+        //get contract deets to submit for market data snapshot
+        const contractDetails = await api.getContractDetails(contract);
+
+        //format the reply to make request
+        const c = {
+            contract: contractDetails[0].contract
+        }
+
+        console.log(c);
+        console.log(c.contract.conId);
+
+        await api.reqMarketDataType(3);
+        console.log('set market data type to: ', api._marketDataType);
+    
+        const marketData = await api.getMarketDataSnapshot(c);
+
+        console.log('market data: ', marketData);
+
+        if('delayedAsk' in marketData){
+            if(marketData.delayedAsk !== -1)  price = marketData.delayedAsk;
+            if(marketData.delayedLast !== -1)  price = marketData.delayedLast;
+        } else if('delayedLast' in marketData){
+            if(marketData.delayedLast !== -1 && price == null)  price = marketData.delayedLast;
+        } else {
+            price = marketData.ask;
+        }
+        return price;
+    } catch (err) {
+        throw err
+    }
+
+}
+
+function modSpxProfitLossPrice (price) {
+    return Math.round(price * 10) / 10;
+}
+
+function getStop (orderOptions, price, configs) {
+    let stopPriceDelta = 0;
+    if(orderOptions.symbol === 'SPX') stopPriceDelta = price * configs.stopLossSpx;
+    else stopPriceDelta = price * configs.stopLoss;
+    let stopPriceFloat = price - stopPriceDelta;
+    let stopPrice2DpStr = parseFloat(stopPriceFloat).toFixed(2);
+    let stopPrice = parseFloat(stopPrice2DpStr);
+    if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
+    console.log('stop price... ', stopPrice);
+    return stopPrice;
+}
+
+function getProfitTaker(orderOptions, price, configs) {
+    let limitPriceDelta = 0;
+    if(orderOptions.symbol === 'SPX') limitPriceDelta = price * configs.proffitTakerSpx;
+    else limitPriceDelta = price * configs.proffitTaker;
+    let limitPriceFloat = price + limitPriceDelta;
+    let limitPrice2DpStr = parseFloat(limitPriceFloat).toFixed(2);
+    let limitPrice = parseFloat(limitPrice2DpStr);
+    if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
+    console.log('limitSellPrice ... ', limitPrice);
+    return limitPrice;
+}
+
+function alertUser(){
+    console.log('Received ALERT: ', message, '\nplacing order... ');
+    console.log('parsed order orderOptions:::: ', orderOptions);
+    //let time = await api.getCurrentTime();
+    //console.log('current time: ' + time);
+}
 
 function delay(time){
     return new Promise((resolve) => {
@@ -174,10 +216,6 @@ function delay(time){
             resolve()
         }, time)
     })
-}
-
-function modSpxProfitLossPrice (price) {
-    return Math.round(price * 10) / 10;
 }
 
 module.exports.startIbkr = startIbkr

@@ -47,8 +47,9 @@ function makeContract(ibkrapi, orderOptions, contractDate) {
 async function getRealtimePrice (api, contract) {
 	try {
 		//get contract deets to submit for market data snapshot
+		console.log('get con deets');
 		const contractDetails = await api.getContractDetails(contract);
-
+		console.log('ret con deets', contractDetails);
 		//format the reply to make request
 		//const c = {
 		//	contract: contractDetails[0].contract
@@ -143,6 +144,17 @@ async function startIbkr(event, configs){
 
 		const t = await api.getCurrentTime();
 		console.log(t);
+		const con = await api.getContractDetails({
+			secType: 'OPT',
+			currency: 'USD',
+			exchange: 'SMART',
+			multiplier: 100,
+			symbol: 'NVDA',
+			right: 'C',
+			lastTradeDateOrContractMonth: '20230611',
+			strike: '450'
+		});
+		console.log(con)
 
 		//alerts events and place order
 		event.on('alert', async (message) => {
@@ -167,9 +179,10 @@ async function startIbkr(event, configs){
 				//----- maybe we need to first check the contrat if its there
 				console.log('making contract')
 				const contract = makeContract(ibkrapi, orderOptions, contractDate);
-				console.log(contract)
+				console.log('returned contract: ', contract)
 				let price = null;
 				//get realtime price
+				console.log('get realtime price')
 				if(isRealTime) price = await getRealtimePrice(api, contract, price);
 				else price = orderOptions.price;
 

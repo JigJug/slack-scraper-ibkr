@@ -13,9 +13,9 @@
         "proffitTakerSpx" : 0.3,
         "stopOrder" : true,
         "profitTaker" : true,
-        "contractDate" : "20230611",
+        "contractDate" : "20230811",
         "realTimeData" : true,
         "trailingStop" : true,
-        "adjustableTrailingUnit": 15
+        "adjustedTrailingAmount": 15
     }
 }

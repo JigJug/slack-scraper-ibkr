@@ -1,6 +1,7 @@
 import { runScraper } from "./Run";
 import events from "events"
 //import { startIbkr, positionTracker } from "./IbkrTws";
+//import { startIbkr } from "./IbkrTws1.mjs";
 //import { startIbkr} from "./test.mjs";
 import * as fs from 'fs'
 import * as path from 'path'
@@ -22,7 +23,7 @@ async function loadConfigs () {
 
 async function startProgram (event: events) {
   try {
-    const sibk = await import("./IbkrTws.js")
+    const sibk = await import("./IbkrTws.mjs")
     const configs = await loadConfigs();
     await Promise.all(
       [

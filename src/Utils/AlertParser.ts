@@ -7,7 +7,7 @@ interface OptionOrderParam {
     date?: number | null;
 }
 
-function parseAlert(alert: string){
+export function parseAlert(alert: string){
 
     const oprderParam: OptionOrderParam = {
         side: null,
@@ -72,4 +72,4 @@ function parseAlert(alert: string){
     )
 }
 
-module.exports.parseAlert = parseAlert
+//module.exports.parseAlert = parseAlert

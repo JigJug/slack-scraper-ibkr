@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parseAlert = void 0;
 function parseAlert(alert) {
     const oprderParam = {
         side: null,
@@ -47,4 +48,5 @@ function parseAlert(alert) {
         && typeof oprderParam.right == 'string'
         ? oprderParam : null);
 }
-module.exports.parseAlert = parseAlert;
+exports.parseAlert = parseAlert;
+//module.exports.parseAlert = parseAlert

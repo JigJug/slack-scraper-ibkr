@@ -20,11 +20,13 @@ function parseAlert(alert: string){
     let strikeIndex = 6;
     let priceIndex = 7;
 
+    console.log('alert parser alert all: ', alert)
+
     alert = alert.replace(/-/g, '')
-    console.log(alert);
+    console.log('alert parser alert replace -: ', alert);
     
     const splitAlert = alert.split(' ');
-    console.log(splitAlert);
+    console.log('alert parser alert split space: ', splitAlert);
     console.log(splitAlert.length);
 
     if(splitAlert[7].indexOf('$') === -1 ){// && splitAlert.length == 10){

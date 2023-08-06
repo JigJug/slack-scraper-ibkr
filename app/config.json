@@ -1,6 +1,6 @@
 {
     "scraperConfig" : {
-        "headlessMode" : true
+        "headlessMode" : false
     },
     "ibkrConfig" : {
         "orderSize" : 2,
@@ -13,9 +13,9 @@
         "proffitTakerSpx" : 0.3,
         "stopOrder" : true,
         "profitTaker" : true,
-        "contractDate" : "20230421",
+        "contractDate" : "20230611",
         "realTimeData" : true,
-        "trailingStop" : false,
+        "trailingStop" : true,
         "adjustableTrailingUnit": 15
     }
 }

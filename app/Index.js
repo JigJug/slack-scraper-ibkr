@@ -60,7 +60,7 @@ function loadConfigs() {
 function startProgram(event) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const sibk = yield import("./test.mjs");
+            const sibk = yield import("./IbkrTws.js");
             const configs = yield loadConfigs();
             yield Promise.all([
                 (0, Run_1.runScraper)(event, configs.scraperConfig),

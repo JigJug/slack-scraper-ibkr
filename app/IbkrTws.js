@@ -107,7 +107,7 @@ function getProfitTakerPrice(orderOptions, price, configs) {
 	return limitPrice;
 }
 
-function alertUser(){
+function alertUser(message, orderOptions){
 	console.log('Received ALERT: ', message, '\nplacing order... ');
 	console.log('parsed order orderOptions:::: ', orderOptions);
 	//let time = await api.getCurrentTime();
@@ -141,16 +141,22 @@ async function startIbkr(event, configs){
 			port: 7497
 		});
 
+		const t = await api.getCurrentTime();
+		console.log(t);
+
 		//alerts events and place order
 		event.on('alert', async (message) => {
 			try {
+				console.log('slert first event: ', message)
 
 				//parse alert
 				const orderOptions = parseAlert.parseAlert(message);
 
 				if(!orderOptions) return
 
-				alertUser();
+				console.log('passed parser')
+
+				alertUser(message, orderOptions);
 
 				if(orderOptions.date) {
 					contractDate = `${contractDate.slice(0, contractDate.length -2)}${orderOptions.date}`;
@@ -159,7 +165,9 @@ async function startIbkr(event, configs){
 
 				//make contract
 				//----- maybe we need to first check the contrat if its there
+				console.log('making contract')
 				const contract = makeContract(ibkrapi, orderOptions, contractDate);
+				console.log(contract)
 				let price = null;
 				//get realtime price
 				if(isRealTime) price = await getRealtimePrice(api, contract, price);

@@ -22,7 +22,7 @@ async function loadConfigs () {
 
 async function startProgram (event: events) {
   try {
-    const sibk = await import("./test.mjs")
+    const sibk = await import("./IbkrTws.js")
     const configs = await loadConfigs();
     await Promise.all(
       [

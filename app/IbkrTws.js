@@ -152,7 +152,7 @@ async function startIbkr(event, configs){
 			symbol: 'NVDA',
 			right: 'C',
 			lastTradeDateOrContractMonth: '20230611',
-			strike: '450'
+			strike: 450
 		});
 		console.log(con)
 

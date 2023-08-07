@@ -61,11 +61,13 @@ function loadConfigs() {
 function startProgram(event) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const sibk = yield import("./IbkrTws.mjs");
+            const mibkc = yield import("./IbkrTwsClass.mjs");
             const configs = yield loadConfigs();
+            const ibkr = new mibkc.IbkrTws(event, configs.ibkrConfig);
+            yield ibkr.connect();
+            ibkr.startListener();
             yield Promise.all([
-                (0, Run_1.runScraper)(event, configs.scraperConfig),
-                sibk.startIbkr(event, configs.ibkrConfig)
+                (0, Run_1.runScraper)(event, configs.scraperConfig)
             ]);
         }
         catch (err) {

@@ -20,32 +20,21 @@ export function parseAlert(alert: string){
     let strikeIndex = 6;
     let priceIndex = 7;
 
-    console.log('alert parser alert all: ', alert)
-
     alert = alert.replace(/-/g, '')
-    console.log('alert parser alert replace -: ', alert);
     
     const splitAlert = alert.split(' ');
-    console.log('alert parser alert split space: ', splitAlert);
-    console.log(splitAlert.length);
 
-    if(splitAlert[7].indexOf('$') === -1 ){// && splitAlert.length == 10){
+    if(splitAlert[7].indexOf('$') === -1 ){
         strikeIndex = strikeIndex + 2;
         priceIndex = priceIndex + 2;
         oprderParam.date = parseInt(splitAlert[7]);
     }
-    //} else if(splitAlert.length > 8){
-    //    console.log('Parser Error');
-    //    return null
-    //}
 
     const side: string = (() => {
         return splitAlert[3] == 'BOUGHT'? 'BUY' : 'SELL'
     })();
 
     const symbol = splitAlert[5];
-
-    console.log(splitAlert[strikeIndex])
     
     const right = (() => {
         const parse = splitAlert[strikeIndex].match(/C|P/);
@@ -62,8 +51,6 @@ export function parseAlert(alert: string){
     oprderParam.strikePrice = strike;
     oprderParam.price = price;
     
-    console.log(oprderParam);
-
     return (
         oprderParam.side === 'BUY'
         && typeof oprderParam.strikePrice == 'number'
@@ -71,5 +58,3 @@ export function parseAlert(alert: string){
         ? oprderParam : null
     )
 }
-
-//module.exports.parseAlert = parseAlert

@@ -1,62 +1,6 @@
-/*export async function startIbkr(event, con){
-    try {
-
-        const ibkrapi = await import("ib-tws-api")
-
-
-        const api = new ibkrapi.Client({
-            host: '127.0.0.1',
-            port: 7497
-        });
-
-    
-        event.on('alert', async (message) => {
-        
-            console.log('Recieved ALERT: ', message, '\nplacing order... ');
-
-            let time = await api.getCurrentTime();
-            console.log('current time: ' + time);
-
-            let order1 = await api.placeOrder({
-                contract: ibkrapi.Contract.stock('TSLA'),
-                order: ibkrapi.Order.market({
-                  action: 'BUY',
-                  totalQuantity: 1
-                })
-            });
-
-            await delay(5000);
-
-            console.log('Open orders: ')
-
-            let tslaCtrt = await api.getAllOpenOrders();
-            console.log(tslaCtrt[0].contract);
-        });
-        
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-function delay(time){
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve()
-        }, time)
-    })
-}
-
-export async function positionTracker(){
-    try {
-        const pos = await api.getPositions();
-        console.log(pos)
-    } catch (err) {
-        console.log(err)
-    }
-    
-}
-
-module.exports.startIbkr = startIbkr*/
+//to make a bracket order we need to send an untransmitted parent order first so it will sit on tws but not
+//send to the servers. once the parent order is sent, tws returns an order id. the order id is then passed to the 
+//limit and stop order so they can be attached to the parent order as child orders...
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -66,9 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-//to make a bracket order we need to send an untransmitted parent order first so it will sit on tws but not
-//send to the servers. once the parent order is sent, tws returns an order id. the order id is then passed to the 
-//limit and stop order so they can be attached to the parent order as child orders...
 //after the parent order is submitted, we need to send an untransmitted limit sell order for tp. finally send the stop
 //order with transmit set to true. when the final orders transmit is set to true, tws will understand this as
 //a bracket order and automatiaclly process the parent order and transmit the child limit tp order.
@@ -113,19 +54,11 @@ function getRealtimePrice(api, contract) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             //get contract deets to submit for market data snapshot
-            console.log('get con deets');
             const contractDetails = yield api.getContractDetails(contract);
-            console.log('ret con deets', contractDetails);
-            //format the reply to make request
-            //const c = {
-            //	contract: contractDetails[0].contract
-            //}
-            console.log('contract: ', contractDetails[0].contract);
             yield api.reqMarketDataType(3);
             const marketData = yield api.getMarketDataSnapshot({
                 contract: contractDetails[0].contract
             });
-            console.log('market data: ', marketData);
             if ('ask' in marketData)
                 return marketData.ask;
             if ('delayedAsk' in marketData) {
@@ -143,36 +76,48 @@ function getRealtimePrice(api, contract) {
         }
     });
 }
+/**
+ *
+ * @param n floating point number input as number or string
+ * @param numOfDec number of decimals to truncate to
+ * @returns floating point number
+ */
+function truncate(n, numOfDec) {
+    return parseFloat(parseFloat(n.toString()).toFixed(numOfDec));
+}
 function modSpxProfitLossPrice(price) {
     return Math.round(price * 10) / 10;
 }
 function getStopPrice(orderOptions, price, configs) {
-    let stopPriceDelta = 0;
-    if (orderOptions.symbol === 'SPX')
-        stopPriceDelta = price * configs.stopLossSpx;
-    else
-        stopPriceDelta = price * configs.stopLoss;
-    let stopPriceFloat = price - stopPriceDelta;
-    let stopPrice2DpStr = parseFloat(stopPriceFloat.toString()).toFixed(2);
-    let stopPrice = parseFloat(stopPrice2DpStr);
-    if (orderOptions.symbol === 'SPX')
-        stopPrice = modSpxProfitLossPrice(stopPrice);
-    console.log('stop price... ', stopPrice);
-    return stopPrice;
+    const isSpx = orderOptions.symbol === 'SPX' ? true : false;
+    const stopDec = isSpx ? configs.stopLossSpx : configs.stopLoss;
+    const stopPrice = truncate((price - (price * stopDec)), 2);
+    return isSpx ? modSpxProfitLossPrice(stopPrice) : stopPrice;
+    //let stopPriceDelta = 0;
+    //if(orderOptions.symbol === 'SPX') stopPriceDelta = calcM(price, configs.stopLossSpx);
+    //else stopPriceDelta = calcM(price, configs.stopLoss);
+    //let stopPrice = truncate((price - stopPriceDelta), 2);
+    //let stopPrice2DpStr = parseFloat(stopPriceFloat.toString()).toFixed(2);
+    //let stopPrice = parseFloat(stopPrice2DpStr);
+    //if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
+    //console.log('stop price... ', stopPrice);
+    //return stopPrice;
 }
 function getProfitTakerPrice(orderOptions, price, configs) {
-    let limitPriceDelta = 0;
-    if (orderOptions.symbol === 'SPX')
-        limitPriceDelta = price * configs.proffitTakerSpx;
-    else
-        limitPriceDelta = price * configs.proffitTaker;
-    let limitPriceFloat = price + limitPriceDelta;
-    let limitPrice2DpStr = parseFloat(limitPriceFloat.toString()).toFixed(2);
-    let limitPrice = parseFloat(limitPrice2DpStr);
-    if (orderOptions.symbol === 'SPX')
-        limitPrice = modSpxProfitLossPrice(limitPrice);
+    const isSpx = orderOptions.symbol === 'SPX' ? true : false;
+    const limDec = isSpx ? configs.proffitTakerSpx : configs.proffitTaker;
+    const limitPrice = truncate((price + (price * limDec)), 2);
+    return isSpx ? modSpxProfitLossPrice(limitPrice) : limitPrice;
+    /*let limitPriceDelta = 0;
+    if(orderOptions.symbol === 'SPX') limitPriceDelta = calcM(price, configs.proffitTakerSpx);
+    else limitPriceDelta = calcM(price, configs.proffitTaker);
+
+    let limitPrice = truncate((price + limitPriceDelta),2);
+    //let limitPrice2DpStr = parseFloat(limitPriceFloat.toString()).toFixed(2);
+    //let limitPrice = parseFloat(limitPrice2DpStr);
+    if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
     console.log('limitSellPrice ... ', limitPrice);
-    return limitPrice;
+    return limitPrice;*/
 }
 function alertUser(message, orderOptions) {
     console.log('Received ALERT: ', message, '\nplacing order... ');

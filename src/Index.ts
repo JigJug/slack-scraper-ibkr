@@ -6,6 +6,7 @@ import events from "events"
 import * as fs from 'fs'
 import * as path from 'path'
 
+
 const event = new events();
 
 async function loadConfigs () {
@@ -23,12 +24,14 @@ async function loadConfigs () {
 
 async function startProgram (event: events) {
   try {
-    const sibk = await import("./IbkrTws.mjs")
+    const mibkc = await import("./IbkrTwsClass.mjs")
     const configs = await loadConfigs();
+    const ibkr = new mibkc.IbkrTws(event, configs.ibkrConfig);
+    await ibkr.connect();
+    ibkr.startListener();
     await Promise.all(
       [
-        runScraper(event, configs.scraperConfig),
-        sibk.startIbkr(event, configs.ibkrConfig)
+        runScraper(event, configs.scraperConfig)
       ]
     );
   } catch (err) {

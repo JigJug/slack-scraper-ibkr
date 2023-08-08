@@ -11,7 +11,7 @@ const event = new events();
 async function loadConfigs () {
   try {
     const rootDir = path.resolve(__dirname);
-    const configsRaw = fs.readFileSync(`${rootDir}\\config.json`);
+    const configsRaw = fs.readFileSync(`${rootDir}/config.json`);
     console.log(configsRaw)
     const configs = JSON.parse(configsRaw.toString());
     console.log(configs)

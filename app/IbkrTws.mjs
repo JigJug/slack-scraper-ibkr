@@ -129,12 +129,16 @@ function getRealtimePrice(api, contract) {
             if ('ask' in marketData)
                 return marketData.ask;
             if ('delayedAsk' in marketData) {
-                if (marketData.delayedAsk !== -1)
+                if (marketData.delayedAsk > 0)
                     return marketData.delayedAsk;
             }
             if ('delayedLast' in marketData) {
-                if (marketData.delayedLast !== -1)
+                if (marketData.delayedLast > 0)
                     return marketData.delayedLast;
+            }
+            if ('delayedClose' in marketData) {
+                if (marketData.delayedClose > 0)
+                    return marketData.delayedClose;
             }
             throw new Error('Could not get price');
         }
@@ -143,36 +147,48 @@ function getRealtimePrice(api, contract) {
         }
     });
 }
+/**
+ *
+ * @param n floating point number input as number or string
+ * @param numOfDec number of decimals to truncate to
+ * @returns floating point number
+ */
+function truncate(n, numOfDec) {
+    return parseFloat(parseFloat(n.toString()).toFixed(numOfDec));
+}
 function modSpxProfitLossPrice(price) {
     return Math.round(price * 10) / 10;
 }
 function getStopPrice(orderOptions, price, configs) {
-    let stopPriceDelta = 0;
-    if (orderOptions.symbol === 'SPX')
-        stopPriceDelta = price * configs.stopLossSpx;
-    else
-        stopPriceDelta = price * configs.stopLoss;
-    let stopPriceFloat = price - stopPriceDelta;
-    let stopPrice2DpStr = parseFloat(stopPriceFloat.toString()).toFixed(2);
-    let stopPrice = parseFloat(stopPrice2DpStr);
-    if (orderOptions.symbol === 'SPX')
-        stopPrice = modSpxProfitLossPrice(stopPrice);
-    console.log('stop price... ', stopPrice);
-    return stopPrice;
+    const isSpx = orderOptions.symbol === 'SPX' ? true : false;
+    const stopDec = isSpx ? configs.stopLossSpx : configs.stopLoss;
+    const stopPrice = truncate((price - (price * stopDec)), 2);
+    return isSpx ? modSpxProfitLossPrice(stopPrice) : stopPrice;
+    //let stopPriceDelta = 0;
+    //if(orderOptions.symbol === 'SPX') stopPriceDelta = calcM(price, configs.stopLossSpx);
+    //else stopPriceDelta = calcM(price, configs.stopLoss);
+    //let stopPrice = truncate((price - stopPriceDelta), 2);
+    //let stopPrice2DpStr = parseFloat(stopPriceFloat.toString()).toFixed(2);
+    //let stopPrice = parseFloat(stopPrice2DpStr);
+    //if(orderOptions.symbol === 'SPX') stopPrice = modSpxProfitLossPrice(stopPrice);
+    //console.log('stop price... ', stopPrice);
+    //return stopPrice;
 }
 function getProfitTakerPrice(orderOptions, price, configs) {
-    let limitPriceDelta = 0;
-    if (orderOptions.symbol === 'SPX')
-        limitPriceDelta = price * configs.proffitTakerSpx;
-    else
-        limitPriceDelta = price * configs.proffitTaker;
-    let limitPriceFloat = price + limitPriceDelta;
-    let limitPrice2DpStr = parseFloat(limitPriceFloat.toString()).toFixed(2);
-    let limitPrice = parseFloat(limitPrice2DpStr);
-    if (orderOptions.symbol === 'SPX')
-        limitPrice = modSpxProfitLossPrice(limitPrice);
+    const isSpx = orderOptions.symbol === 'SPX' ? true : false;
+    const limDec = isSpx ? configs.proffitTakerSpx : configs.proffitTaker;
+    const limitPrice = truncate((price + (price * limDec)), 2);
+    return isSpx ? modSpxProfitLossPrice(limitPrice) : limitPrice;
+    /*let limitPriceDelta = 0;
+    if(orderOptions.symbol === 'SPX') limitPriceDelta = calcM(price, configs.proffitTakerSpx);
+    else limitPriceDelta = calcM(price, configs.proffitTaker);
+
+    let limitPrice = truncate((price + limitPriceDelta),2);
+    //let limitPrice2DpStr = parseFloat(limitPriceFloat.toString()).toFixed(2);
+    //let limitPrice = parseFloat(limitPrice2DpStr);
+    if(orderOptions.symbol === 'SPX') limitPrice = modSpxProfitLossPrice(limitPrice);
     console.log('limitSellPrice ... ', limitPrice);
-    return limitPrice;
+    return limitPrice;*/
 }
 function alertUser(message, orderOptions) {
     console.log('Received ALERT: ', message, '\nplacing order... ');

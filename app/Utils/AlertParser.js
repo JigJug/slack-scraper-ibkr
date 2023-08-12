@@ -37,11 +37,15 @@ function parseAlert(alert) {
     })();
     const strike = parseFloat(splitAlert[strikeIndex].replace(/C|P/, ''));
     const price = parseFloat(splitAlert[priceIndex].replace('$', ''));
+    const zdte = (() => {
+        return !oprderParam.date && symbol === 'SPX' ? true : false;
+    })();
     oprderParam.side = side;
     oprderParam.symbol = symbol;
     oprderParam.right = right;
     oprderParam.strikePrice = strike;
     oprderParam.price = price;
+    oprderParam.zdte = zdte;
     console.log(oprderParam);
     return (oprderParam.side === 'BUY'
         && typeof oprderParam.strikePrice == 'number'
@@ -49,4 +53,3 @@ function parseAlert(alert) {
         ? oprderParam : null);
 }
 exports.parseAlert = parseAlert;
-//module.exports.parseAlert = parseAlert

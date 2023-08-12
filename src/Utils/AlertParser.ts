@@ -1,15 +1,16 @@
-interface OptionOrderParam {
+export interface OrderOptions {
     side: string | null;
     symbol: string | null;
     right: string | null;
     strikePrice: number | null;
     price: number | null;
     date?: number | null;
+    zdte?: boolean | null;
 }
 
 export function parseAlert(alert: string){
 
-    const oprderParam: OptionOrderParam = {
+    const oprderParam: OrderOptions = {
         side: null,
         symbol: null,
         right: null,
@@ -55,12 +56,17 @@ export function parseAlert(alert: string){
     const strike = parseFloat(splitAlert[strikeIndex].replace(/C|P/, ''));
 
     const price = parseFloat(splitAlert[priceIndex].replace('$', ''));
+
+    const zdte: boolean = (() => {
+        return !oprderParam.date && symbol === 'SPX'  ? true : false;
+    })();
     
     oprderParam.side = side;
     oprderParam.symbol = symbol;
     oprderParam.right = right;
     oprderParam.strikePrice = strike;
     oprderParam.price = price;
+    oprderParam.zdte = zdte;
     
     console.log(oprderParam);
 
@@ -71,5 +77,3 @@ export function parseAlert(alert: string){
         ? oprderParam : null
     )
 }
-
-//module.exports.parseAlert = parseAlert

@@ -32,11 +32,11 @@ import { Client, Contract, Order } from "ib-tws-api-jj";
  * @param {string} contractDate
  * @returns ibkr option contract
  */
-function makeContract(Contract, orderOptions, contractDate) {
+function makeContract(Contract, orderOptions) {
     return Contract.option({
         symbol: orderOptions.symbol,
         right: orderOptions.right,
-        lastTradeDateOrContractMonth: contractDate,
+        lastTradeDateOrContractMonth: orderOptions.date,
         strike: orderOptions.strikePrice
     });
 }
@@ -166,18 +166,17 @@ function placeOrder(api, contract, order) {
     });
 }
 function makeOrder(type, api, contract, orderSize, oPms) {
-    console.log(type);
     const order = {
-        'MARKET': () => {
+        MARKET: () => {
             return orderMarket(orderSize, oPms);
         },
-        'LIMIT': () => {
+        LIMIT: () => {
             return orderLimitSell(orderSize, oPms);
         },
-        'STOP': () => {
-            return oPms.configs.trailingStop ?
-                orderTrail(orderSize, oPms) :
-                orderStop(orderSize, oPms);
+        STOP: () => {
+            return oPms.configs.trailingStop
+                ? orderTrail(orderSize, oPms)
+                : orderStop(orderSize, oPms);
         }
     };
     return placeOrder(api, contract, order[type]);
@@ -225,23 +224,17 @@ export function startIbkr(event, configs) {
                 try {
                     const timeNow = timeStamp();
                     //parse alert
-                    const orderOptions = parseAlert(message);
+                    const orderOptions = parseAlert(message, configs.contractDate);
                     if (!orderOptions)
                         return;
                     alertUser(message, orderOptions);
                     let orderSize = configs.orderSize;
-                    let contractDate = configs.contractDate;
-                    if (orderOptions.date) {
-                        contractDate = `${contractDate.slice(0, contractDate.length - 2)}${orderOptions.date}`;
-                        console.log('new contract date found: ', orderOptions.date);
-                    }
                     //make contract
                     //----- maybe we need to first check the contrat if its there
-                    console.log('making contract');
-                    const contract = makeContract(Contract, orderOptions, contractDate);
+                    const contract = makeContract(Contract, orderOptions);
                     console.log('returned contract: ', contract);
                     //get price
-                    console.log('get realtime price');
+                    console.log('get price');
                     let price = yield getPrice(api, contract, isRealTime, orderOptions);
                     //calc ordersize
                     if ((price * orderSize * 100) > maxOrder)

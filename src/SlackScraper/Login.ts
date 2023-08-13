@@ -24,7 +24,7 @@ export async function loginToSlack(page: Page, delayToLogin: number) {
 
             const cookies = JSON.parse(getCookies.toString());
 
-            for (let cookie of cookies.cookies) {
+            for (const cookie of cookies.cookies) {
                 await page.setCookie(cookie);
             }
 

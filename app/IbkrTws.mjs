@@ -235,7 +235,7 @@ export function startIbkr(event, configs) {
                     console.log('returned contract: ', contract);
                     //get price
                     console.log('get price');
-                    let price = yield getPrice(api, contract, isRealTime, orderOptions);
+                    const price = yield getPrice(api, contract, isRealTime, orderOptions);
                     //calc ordersize
                     if ((price * orderSize * 100) > maxOrder)
                         orderSize = 1;

@@ -51,7 +51,7 @@ function loginToSlack(page, delayToLogin) {
             if (fss.existsSync(COOKIES_FILE_PATH)) {
                 const getCookies = yield fs.readFile(COOKIES_FILE_PATH);
                 const cookies = JSON.parse(getCookies.toString());
-                for (let cookie of cookies.cookies) {
+                for (const cookie of cookies.cookies) {
                     yield page.setCookie(cookie);
                 }
                 console.log('set cookies');

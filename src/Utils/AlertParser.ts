@@ -31,7 +31,7 @@ export function parseAlert(alert: string, contractDate: string){
     if(splitAlert[7].indexOf('$') === -1 ){
         strikeIndex = strikeIndex + 2;
         priceIndex = priceIndex + 2;
-        let d = parseInt(splitAlert[7]);
+        const d = parseInt(splitAlert[7]);
         orderParam.date = `${contractDate.slice(0, contractDate.length -2)}${d}`;
     }
 

@@ -59,7 +59,7 @@ const loadHtml = (page) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const blockQuotes = yield page.$$eval("blockquote", (chdv) => {
             //let eles = chdv.getElementsByClassName('p-rich_text_section');
-            let elesa = Array.from(chdv);
+            const elesa = Array.from(chdv);
             return elesa.map((v) => {
                 return v.textContent;
             });
@@ -76,11 +76,11 @@ const loadHtml = (page) => __awaiter(void 0, void 0, void 0, function* () {
         throw err;
     }
 });
-function checkForDuplicates(signalArry, toCheck) {
-    return signalArry.some((v) => {
-        return v.includes(toCheck);
-    });
-}
+//function checkForDuplicates(signalArry: string[], toCheck: string){
+//    return signalArry.some((v) => {
+//        return v.includes(toCheck)
+//    })
+//}
 /**
  * makeHumanAndKickIdle
  * - Refresh page after a random amount of minutes between 2 and 5 minutes
@@ -133,10 +133,13 @@ function makeHumanAndKickIdle(page, count, lastMessage) {
     });
 }
 function timeStamp() {
+    const az = (dig) => {
+        return dig.toString().length === 1 ? `0${dig}` : dig;
+    };
     const date = new Date();
-    const hour = date.getHours();
-    const minutes = date.getMinutes();
-    const seconds = date.getSeconds();
-    const milis = date.getMilliseconds();
+    const hour = az(date.getHours());
+    const minutes = az(date.getMinutes());
+    const seconds = az(date.getSeconds());
+    const milis = az(date.getMilliseconds());
     return `${hour}:${minutes}:${seconds}.${milis}`;
 }

@@ -8,7 +8,7 @@ interface Count {
 }
 
 
-export async function getFeed(event: events, page:Page, lastMessage: string , start: boolean, count: Count): Promise<any> {
+export async function getFeed(event: events, page:Page, lastMessage: string , start: boolean, count: Count): Promise<void> {
     
     try {
 
@@ -69,7 +69,7 @@ const loadHtml = async (page: Page) => {
 
         const blockQuotes = await page.$$eval("blockquote", (chdv)=>{
             //let eles = chdv.getElementsByClassName('p-rich_text_section');
-            let elesa = Array.from(chdv)
+            const elesa = Array.from(chdv)
 
             return elesa.map((v) => {
                 return v.textContent
@@ -94,11 +94,11 @@ const loadHtml = async (page: Page) => {
 
 
 
-function checkForDuplicates(signalArry: string[], toCheck: string){
-    return signalArry.some((v) => {
-        return v.includes(toCheck)
-    })
-}
+//function checkForDuplicates(signalArry: string[], toCheck: string){
+//    return signalArry.some((v) => {
+//        return v.includes(toCheck)
+//    })
+//}
 
 /**
  * makeHumanAndKickIdle
@@ -156,11 +156,16 @@ async function makeHumanAndKickIdle(page: Page, count: Count, lastMessage: strin
 }
 
 function timeStamp(){
+
+    const az = (dig: number) => {
+        return dig.toString().length === 1 ? `0${dig}` : dig;
+    }
+
     const date = new Date();
-    const hour = date.getHours();
-    const minutes = date.getMinutes();
-    const seconds = date.getSeconds();
-    const milis = date.getMilliseconds();
+    const hour = az(date.getHours())
+    const minutes = az(date.getMinutes());
+    const seconds = az(date.getSeconds());
+    const milis = az(date.getMilliseconds());
     return `${hour}:${minutes}:${seconds}.${milis}`
 
 }

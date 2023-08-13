@@ -51,7 +51,7 @@ function makeContract(Contract: Contract, orderOptions: OrderOptions) {
  * @param {Number} price 
  * @returns price
  */
-async function getPrice (api: Client, contract: any, isRealTime: boolean, orderOptions: OrderOptions) {
+async function getPrice (api: Client, contract: Contract, isRealTime: boolean, orderOptions: OrderOptions) {
 	try {
 		if(!isRealTime) return orderOptions.price;
 		//get contract deets to submit for market data snapshot
@@ -287,7 +287,7 @@ export async function startIbkr(event: events, configs: IbkrConfig){
 
 				//get price
 				console.log('get price');
-				let price = await getPrice(api, contract, isRealTime, orderOptions);
+				const price = await getPrice(api, contract, isRealTime, orderOptions);
 
 				//calc ordersize
 				if((price * orderSize * 100) > maxOrder) orderSize = 1;

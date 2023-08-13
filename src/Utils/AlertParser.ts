@@ -4,41 +4,36 @@ export interface OrderOptions {
     right: string | null;
     strikePrice: number | null;
     price: number | null;
-    date?: number | null;
-    zdte?: boolean | null;
+    date: string | null;
+    newDate: boolean;
 }
 
-export function parseAlert(alert: string){
+export function parseAlert(alert: string, contractDate: string){
 
-    const oprderParam: OrderOptions = {
+    const orderParam: OrderOptions = {
         side: null,
         symbol: null,
         right: null,
         strikePrice: null,
-        price: null
+        price: null,
+        date: contractDate,
+        newDate: false
     }
 
     let strikeIndex = 6;
     let priceIndex = 7;
 
-    console.log('alert parser alert all: ', alert)
-
-    alert = alert.replace(/-/g, '')
-    console.log('alert parser alert replace -: ', alert);
+    alert = alert.replace(/-/g, '');
     
     const splitAlert = alert.split(' ');
-    console.log('alert parser alert split space: ', splitAlert);
-    console.log(splitAlert.length);
 
-    if(splitAlert[7].indexOf('$') === -1 ){// && splitAlert.length == 10){
+    //check if new date is in alert
+    if(splitAlert[7].indexOf('$') === -1 ){
         strikeIndex = strikeIndex + 2;
         priceIndex = priceIndex + 2;
-        oprderParam.date = parseInt(splitAlert[7]);
+        let d = parseInt(splitAlert[7]);
+        orderParam.date = `${contractDate.slice(0, contractDate.length -2)}${d}`;
     }
-    //} else if(splitAlert.length > 8){
-    //    console.log('Parser Error');
-    //    return null
-    //}
 
     const side: string = (() => {
         return splitAlert[3] == 'BOUGHT'? 'BUY' : 'SELL'
@@ -57,23 +52,34 @@ export function parseAlert(alert: string){
 
     const price = parseFloat(splitAlert[priceIndex].replace('$', ''));
 
-    const zdte: boolean = (() => {
-        return !oprderParam.date && symbol === 'SPX'  ? true : false;
-    })();
+    //check if spx and z-dte
+    if(!orderParam.newDate) {
+        if(symbol === 'SPX') {
+            orderParam.date = todaysDate();
+        }
+    }
     
-    oprderParam.side = side;
-    oprderParam.symbol = symbol;
-    oprderParam.right = right;
-    oprderParam.strikePrice = strike;
-    oprderParam.price = price;
-    oprderParam.zdte = zdte;
+    orderParam.side = side;
+    orderParam.symbol = symbol;
+    orderParam.right = right;
+    orderParam.strikePrice = strike;
+    orderParam.price = price;
     
-    console.log(oprderParam);
+    console.log(orderParam);
 
     return (
-        oprderParam.side === 'BUY'
-        && typeof oprderParam.strikePrice == 'number'
-        && typeof oprderParam.right == 'string'
-        ? oprderParam : null
+        orderParam.side === 'BUY'
+        && typeof orderParam.strikePrice == 'number'
+        && typeof orderParam.right == 'string'
+        ? orderParam
+        : null
     )
+}
+
+function todaysDate () {
+    const nd = new Date();
+    const addZero = (dig: number) => {
+        return dig.toString().length === 1 ? `0${dig}` : dig;
+    }
+    return `${nd.getFullYear()}${addZero((nd.getUTCMonth()+1))}${addZero(nd.getDate())}`
 }

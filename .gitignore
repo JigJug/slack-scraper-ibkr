@@ -4,3 +4,4 @@ tsconfig.json
 cookies
 dump
 .envAMIT
+.eslintrc.cjs

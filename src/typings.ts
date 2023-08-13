@@ -9,12 +9,17 @@ export interface ScraperConfig {
 
 export interface IbkrConfig {
     orderSize: number,
+    orderSizeSpx: number,
     lotto: number,
     maxOrder: number,
     stopLoss: number,
+    stopLossSpx: number,
     proffitTaker: number,
+    proffitTakerSpx: number,
     stopOrder: boolean,
     profitTaker: boolean,
     contractDate: string,
-    realTimeData: boolean
+    realTimeData: boolean,
+    trailingStop: boolean,
+    adjustedTrailingAmount: number
 }

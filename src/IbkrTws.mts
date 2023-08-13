@@ -19,6 +19,7 @@ import { parseAlert} from "./Utils/AlertParser.js";
 import { Client, Contract, Order } from "ib-tws-api-jj";
 import events from "events"
 import { OrderOptions } from "./Utils/AlertParser.js";
+import { IbkrConfig } from "./typings.js";
 
 /**
  * Get the contract from twsapi
@@ -27,11 +28,11 @@ import { OrderOptions } from "./Utils/AlertParser.js";
  * @param {string} contractDate 
  * @returns ibkr option contract
  */
-function makeContract(Contract: Contract, orderOptions: OrderOptions, contractDate: string) {
+function makeContract(Contract: Contract, orderOptions: OrderOptions) {
 	return Contract.option({
 		symbol: orderOptions.symbol,
 		right: orderOptions.right,
-		lastTradeDateOrContractMonth: contractDate,
+		lastTradeDateOrContractMonth: orderOptions.date,
 		strike: orderOptions.strikePrice
 	});
 }
@@ -105,7 +106,7 @@ function isSpx (symbol: string) {
 	return symbol === 'SPX' ? true : false;
 }
 
-function getStopPrice(orderOptions: OrderOptions, price: number, configs: any) {
+function getStopPrice(orderOptions: OrderOptions, price: number, configs: IbkrConfig) {
 
 	const spx = isSpx(orderOptions.symbol!);
 
@@ -117,7 +118,7 @@ function getStopPrice(orderOptions: OrderOptions, price: number, configs: any) {
 
 }
 
-function getProfitTakerPrice(orderOptions: OrderOptions, price: number, configs: any) {
+function getProfitTakerPrice(orderOptions: OrderOptions, price: number, configs: IbkrConfig) {
 
 	const spx = isSpx(orderOptions.symbol!);
 
@@ -170,7 +171,7 @@ function orderTrail(orderSize: number, oPms: OrderParams) {
 		triggerPrice: 11.00,
 		adjustedOrderType: "TRAIL",
 		adjustableTrailingUnit: 100, //unit = 100 tells tws its a %
-		adjustedTrailingAmount: oPms.configs.adjustedTrailingAmount
+		adjustedTrailingAmount: oPms.configs!.adjustedTrailingAmount
 	}, true, oPms.parentId)
 }
 
@@ -189,7 +190,7 @@ interface OrderParams {
 	stpLmPrice?: number,
 	parentId?: number,
 	orderOptions?: OrderOptions,
-	configs?: any
+	configs?: IbkrConfig
 }
 
 function makeOrder (
@@ -199,21 +200,20 @@ function makeOrder (
 	orderSize: number,
 	oPms: OrderParams
 ) {
-	console.log(type)
 	const order: Record<string, () => Order> = {
-		'MARKET': () => {
+		MARKET: () => {
 			return orderMarket(orderSize, oPms);
 		},
-		'LIMIT': () => {
+		LIMIT: () => {
 			return orderLimitSell(orderSize, oPms);
 		},
-		'STOP': () => {
-			return oPms.configs.trailingStop ?
-			orderTrail(orderSize, oPms) :
-			orderStop(orderSize, oPms)
+		STOP: () => {
+			return oPms.configs!.trailingStop
+			? orderTrail(orderSize, oPms)
+			: orderStop(orderSize, oPms)
 		}
 	}
-	return placeOrder(api, contract, order[type])
+	return placeOrder(api, contract, order[type]);
 }
 
 async function sendOrders(
@@ -222,7 +222,7 @@ async function sendOrders(
 	contract: Contract,
 	orderSize: number,
 	price: number,
-	configs: any
+	configs: IbkrConfig
 ) {
 	try {
 		//set up bracket order
@@ -250,7 +250,7 @@ async function sendOrders(
 	}
 }
 
-export async function startIbkr(event: events, configs: any){
+export async function startIbkr(event: events, configs: IbkrConfig){
 
 	const isRealTime = configs.realTimeData;
 	const maxOrder = configs.maxOrder;
@@ -272,28 +272,21 @@ export async function startIbkr(event: events, configs: any){
 			try {
 				const timeNow = timeStamp();
 				//parse alert
-				const orderOptions = parseAlert(message);
+				const orderOptions = parseAlert(message, configs.contractDate);
 
 				if(!orderOptions) return
 
 				alertUser(message, orderOptions);
 
 				let orderSize = configs.orderSize;
-				let contractDate = configs.contractDate;
-
-				if(orderOptions.date) {
-					contractDate = `${contractDate.slice(0, contractDate.length -2)}${orderOptions.date}`;
-					console.log('new contract date found: ', orderOptions.date);
-				}
 
 				//make contract
 				//----- maybe we need to first check the contrat if its there
-				console.log('making contract');
-				const contract = makeContract(Contract, orderOptions, contractDate);
+				const contract = makeContract(Contract, orderOptions);
 				console.log('returned contract: ', contract);
 
 				//get price
-				console.log('get realtime price');
+				console.log('get price');
 				let price = await getPrice(api, contract, isRealTime, orderOptions);
 
 				//calc ordersize

@@ -18,7 +18,7 @@ class PositionHandler {
             //    contract: contract
             //});
             let e = yield this.api.getMarketDataSnapshot({
-                contract: contract
+                contract: contract,
             });
             console.log(e);
             //e.on('tick', (t: any) => {

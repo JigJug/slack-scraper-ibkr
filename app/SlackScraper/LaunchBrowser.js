@@ -20,7 +20,7 @@ function launchBrowser(mode) {
         if (mode) {
             options = {
                 headless: true,
-                defaultViewport: { height: 6000, width: 1463 }
+                defaultViewport: { height: 6000, width: 1463 },
             };
         }
         else {
@@ -31,7 +31,7 @@ function launchBrowser(mode) {
         }
         const browser = yield puppeteer_1.default.launch(options);
         if (mode)
-            console.log('Headless browser launched successfully');
+            console.log("Headless browser launched successfully");
         const page = yield browser.newPage();
         return { page, browser };
     });

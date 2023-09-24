@@ -37,9 +37,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Run_1 = require("./Run");
 const events_1 = __importDefault(require("events"));
-//import { startIbkr, positionTracker } from "./IbkrTws";
-//import { startIbkr } from "./IbkrTws1.mjs";
-//import { startIbkr} from "./test.mjs";
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const event = new events_1.default();
@@ -48,9 +45,7 @@ function loadConfigs() {
         try {
             const rootDir = path.resolve(__dirname);
             const configsRaw = fs.readFileSync(`${rootDir}/config.json`);
-            console.log(configsRaw);
             const configs = JSON.parse(configsRaw.toString());
-            console.log(configs);
             return configs;
         }
         catch (err) {
@@ -65,7 +60,7 @@ function startProgram(event) {
             const configs = yield loadConfigs();
             yield Promise.all([
                 (0, Run_1.runScraper)(event, configs.scraperConfig),
-                sibk.startIbkr(event, configs.ibkrConfig)
+                sibk.startIbkr(event, configs.ibkrConfig),
             ]);
         }
         catch (err) {
@@ -74,7 +69,3 @@ function startProgram(event) {
     });
 }
 startProgram(event);
-//start scraping
-//runScraper(event, configs);
-//listen for alerts
-//startIbkr(event, configs);

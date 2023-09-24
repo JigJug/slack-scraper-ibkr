@@ -54,11 +54,11 @@ function httpRequest(options, write, body) {
                 res.resume();
                 return;
             }
-            let data = '';
-            res.on('data', (chunk) => {
+            let data = "";
+            res.on("data", (chunk) => {
                 data += chunk;
             });
-            res.on('close', () => {
+            res.on("close", () => {
                 let resData = JSON.parse(data);
                 resolve(resData);
             });
@@ -66,7 +66,7 @@ function httpRequest(options, write, body) {
         if (write)
             request.write(JSON.stringify(body));
         request.end();
-        request.on('error', (err) => {
+        request.on("error", (err) => {
             reject(err);
         });
     });

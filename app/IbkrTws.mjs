@@ -37,7 +37,7 @@ function makeContract(Contract, orderOptions) {
         symbol: orderOptions.symbol,
         right: orderOptions.right,
         lastTradeDateOrContractMonth: orderOptions.date,
-        strike: orderOptions.strikePrice
+        strike: orderOptions.strikePrice,
     });
 }
 /**
@@ -60,33 +60,32 @@ function getPrice(api, contract, isRealTime, orderOptions) {
             if (!isRealTime)
                 return orderOptions.price;
             //get contract deets to submit for market data snapshot
-            console.log('get con deets');
             const contractDetails = yield api.getContractDetails(contract);
-            console.log('ret con deets', contractDetails);
-            console.log('contract: ', contractDetails[0].contract);
+            console.log("ret con deets", contractDetails);
+            console.log("contract: ", contractDetails[0].contract);
             yield api.reqMarketDataType(3);
             const marketData = yield api.getMarketDataSnapshot({
-                contract: contractDetails[0].contract
+                contract: contractDetails[0].contract,
             });
-            console.log('market data: ', marketData);
-            if ('ask' in marketData)
+            console.log("market data: ", marketData);
+            if ("ask" in marketData)
                 return marketData.ask;
-            if ('delayedAsk' in marketData) {
+            if ("delayedAsk" in marketData) {
                 if (marketData.delayedAsk > 0)
                     return marketData.delayedAsk;
             }
-            if ('delayedLast' in marketData) {
+            if ("delayedLast" in marketData) {
                 if (marketData.delayedLast > 0)
                     return marketData.delayedLast;
             }
-            if ('delayedClose' in marketData) {
+            if ("delayedClose" in marketData) {
                 if (marketData.delayedClose > 0)
                     return marketData.delayedClose;
             }
             return orderOptions.price;
         }
         catch (err) {
-            console.log('using parsed price...');
+            console.log("using parsed price...");
             return orderOptions.price;
         }
     });
@@ -104,23 +103,23 @@ function modSpxProfitLossPrice(price) {
     return Math.round(price * 10) / 10;
 }
 function isSpx(symbol) {
-    return symbol === 'SPX' ? true : false;
+    return symbol === "SPX" ? true : false;
 }
 function getStopPrice(orderOptions, price, configs) {
     const spx = isSpx(orderOptions.symbol);
     const stopDec = spx ? configs.stopLossSpx : configs.stopLoss;
-    const stopPrice = truncate((price - (price * stopDec)), 2);
+    const stopPrice = truncate(price - price * stopDec, 2);
     return spx ? modSpxProfitLossPrice(stopPrice) : stopPrice;
 }
 function getProfitTakerPrice(orderOptions, price, configs) {
     const spx = isSpx(orderOptions.symbol);
     const limDec = spx ? configs.proffitTakerSpx : configs.proffitTaker;
-    const limitPrice = truncate((price + (price * limDec)), 2);
+    const limitPrice = truncate(price + price * limDec, 2);
     return spx ? modSpxProfitLossPrice(limitPrice) : limitPrice;
 }
 function alertUser(message, orderOptions) {
-    console.log('Received ALERT: ', message, '\nplacing order... ');
-    console.log('parsed order orderOptions:::: ', orderOptions);
+    console.log("Received ALERT: ", message, "\nplacing order... ");
+    console.log("parsed order orderOptions:::: ", orderOptions);
 }
 function timeStamp() {
     return new Date().getTime();
@@ -128,21 +127,21 @@ function timeStamp() {
 function orderMarket(orderSize, oPms) {
     return Order.market({
         action: oPms.orderOptions.side,
-        totalQuantity: orderSize
+        totalQuantity: orderSize,
     }, false);
 }
 function orderLimitSell(orderSize, oPms) {
     return Order.limit({
         action: "SELL",
         totalQuantity: orderSize,
-        lmtPrice: oPms.stpLmPrice
+        lmtPrice: oPms.stpLmPrice,
     }, false, oPms.parentId);
 }
 function orderStop(orderSize, oPms) {
     return Order.stop({
         action: "SELL",
         totalQuantity: orderSize,
-        auxPrice: oPms.stpLmPrice
+        auxPrice: oPms.stpLmPrice,
     }, true, oPms.parentId);
 }
 function orderTrail(orderSize, oPms) {
@@ -151,17 +150,17 @@ function orderTrail(orderSize, oPms) {
         totalQuantity: orderSize,
         auxPrice: oPms.stpLmPrice,
         adjustedStopPrice: 7,
-        triggerPrice: 11.00,
+        triggerPrice: 11.0,
         adjustedOrderType: "TRAIL",
         adjustableTrailingUnit: 100,
-        adjustedTrailingAmount: oPms.configs.adjustedTrailingAmount
+        adjustedTrailingAmount: oPms.configs.adjustedTrailingAmount,
     }, true, oPms.parentId);
 }
 function placeOrder(api, contract, order) {
     return __awaiter(this, void 0, void 0, function* () {
         return api.placeOrder({
             contract: contract,
-            order: order()
+            order: order(),
         });
     });
 }
@@ -177,7 +176,7 @@ function makeOrder(type, api, contract, orderSize, oPms) {
             return oPms.configs.trailingStop
                 ? orderTrail(orderSize, oPms)
                 : orderStop(orderSize, oPms);
-        }
+        },
     };
     return placeOrder(api, contract, order[type]);
 }
@@ -186,19 +185,21 @@ function sendOrders(api, orderOptions, contract, orderSize, price, configs) {
         try {
             //set up bracket order
             //market order
-            const parentId = yield makeOrder('MARKET', api, contract, orderSize, { orderOptions });
+            const parentId = yield makeOrder("MARKET", api, contract, orderSize, {
+                orderOptions,
+            });
             //make limit sell order
             //const limitPrice = getProfitTakerPrice(orderOptions, price, configs);
-            yield makeOrder('LIMIT', api, contract, orderSize, {
+            yield makeOrder("LIMIT", api, contract, orderSize, {
                 stpLmPrice: getProfitTakerPrice(orderOptions, price, configs),
-                parentId
+                parentId,
             });
             //make stop order
             //const stopPrice = getStopPrice(orderOptions, price, configs);
-            yield makeOrder('STOP', api, contract, orderSize, {
+            yield makeOrder("STOP", api, contract, orderSize, {
                 configs,
                 stpLmPrice: getStopPrice(orderOptions, price, configs),
-                parentId
+                parentId,
             });
         }
         catch (err) {
@@ -213,14 +214,14 @@ export function startIbkr(event, configs) {
         try {
             //start client
             const api = new Client({
-                host: '127.0.0.1',
+                host: "127.0.0.1",
                 port: 7497,
-                timeoutMs: 30000
+                timeoutMs: 30000,
             });
             const t = yield api.getCurrentTime();
             console.log(t);
             //alerts events and place order
-            event.on('alert', (message) => __awaiter(this, void 0, void 0, function* () {
+            event.on("alert", (message) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     const timeNow = timeStamp();
                     //parse alert
@@ -232,12 +233,12 @@ export function startIbkr(event, configs) {
                     //make contract
                     //----- maybe we need to first check the contrat if its there
                     const contract = makeContract(Contract, orderOptions);
-                    console.log('returned contract: ', contract);
+                    console.log("returned contract: ", contract);
                     //get price
-                    console.log('get price');
+                    console.log("get price");
                     const price = yield getPrice(api, contract, isRealTime, orderOptions);
                     //calc ordersize
-                    if ((price * orderSize * 100) > maxOrder)
+                    if (price * orderSize * 100 > maxOrder)
                         orderSize = 1;
                     yield sendOrders(api, orderOptions, contract, orderSize, price, configs);
                     console.log(`Orders Sent... and took ${(timeStamp() - timeNow) / 1000} seconds to complete`);

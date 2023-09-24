@@ -9,21 +9,21 @@ function parseAlert(alert, contractDate) {
         strikePrice: null,
         price: null,
         date: contractDate,
-        newDate: false
+        newDate: false,
     };
     let strikeIndex = 6;
     let priceIndex = 7;
-    alert = alert.replace(/-/g, '');
-    const splitAlert = alert.split(' ');
+    alert = alert.replace(/-/g, "");
+    const splitAlert = alert.split(" ");
     //check if new date is in alert
-    if (splitAlert[7].indexOf('$') === -1) {
+    if (splitAlert[7].indexOf("$") === -1) {
         strikeIndex = strikeIndex + 2;
         priceIndex = priceIndex + 2;
         const d = parseInt(splitAlert[7]);
         orderParam.date = `${contractDate.slice(0, contractDate.length - 2)}${d}`;
     }
     const side = (() => {
-        return splitAlert[3] == 'BOUGHT' ? 'BUY' : 'SELL';
+        return splitAlert[3] == "BOUGHT" ? "BUY" : "SELL";
     })();
     const symbol = splitAlert[5];
     console.log(splitAlert[strikeIndex]);
@@ -31,11 +31,11 @@ function parseAlert(alert, contractDate) {
         const parse = splitAlert[strikeIndex].match(/C|P/);
         return parse != null ? parse[0] : null;
     })();
-    const strike = parseFloat(splitAlert[strikeIndex].replace(/C|P/, ''));
-    const price = parseFloat(splitAlert[priceIndex].replace('$', ''));
+    const strike = parseFloat(splitAlert[strikeIndex].replace(/C|P/, ""));
+    const price = parseFloat(splitAlert[priceIndex].replace("$", ""));
     //check if spx and z-dte
     if (!orderParam.newDate) {
-        if (symbol === 'SPX') {
+        if (symbol === "SPX") {
             orderParam.date = todaysDate();
         }
     }
@@ -44,12 +44,11 @@ function parseAlert(alert, contractDate) {
     orderParam.right = right;
     orderParam.strikePrice = strike;
     orderParam.price = price;
-    console.log(orderParam);
-    return (orderParam.side === 'BUY'
-        && typeof orderParam.strikePrice == 'number'
-        && typeof orderParam.right == 'string'
+    return orderParam.side === "BUY" &&
+        typeof orderParam.strikePrice == "number" &&
+        typeof orderParam.right == "string"
         ? orderParam
-        : null);
+        : null;
 }
 exports.parseAlert = parseAlert;
 function todaysDate() {
@@ -57,5 +56,5 @@ function todaysDate() {
     const addZero = (dig) => {
         return dig.toString().length === 1 ? `0${dig}` : dig;
     };
-    return `${nd.getFullYear()}${addZero((nd.getUTCMonth() + 1))}${addZero(nd.getDate())}`;
+    return `${nd.getFullYear()}${addZero(nd.getUTCMonth() + 1)}${addZero(nd.getDate())}`;
 }

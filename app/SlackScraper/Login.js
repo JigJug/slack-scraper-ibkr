@@ -42,8 +42,8 @@ dotenv.config();
 const SLACKCHANNEL = process.env.SLACK_CLIENT_URL;
 const WS = process.env.SLACK_WORKSPACE_URL;
 const EMAIL = process.env.SLACK_EMAIL;
-const COOKIES_FOLDER_PATH = 'cookies/';
-const COOKIES_FILE_NAME = 'slack-session-cookies.json';
+const COOKIES_FOLDER_PATH = "cookies/";
+const COOKIES_FILE_NAME = "slack-session-cookies.json";
 const COOKIES_FILE_PATH = COOKIES_FOLDER_PATH + COOKIES_FILE_NAME;
 function loginToSlack(page, delayToLogin) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -54,7 +54,7 @@ function loginToSlack(page, delayToLogin) {
                 for (const cookie of cookies.cookies) {
                     yield page.setCookie(cookie);
                 }
-                console.log('set cookies');
+                console.log("set cookies");
                 yield page.goto(SLACKCHANNEL);
             }
             else {
@@ -73,10 +73,10 @@ exports.loginToSlack = loginToSlack;
 function login(page) {
     return __awaiter(this, void 0, void 0, function* () {
         yield page.goto(WS);
-        yield page.type('#signup_email', EMAIL);
+        yield page.type("#signup_email", EMAIL);
         //await delay(10000)
-        yield page.click('#submit_btn');
-        yield page.waitForNavigation({ waitUntil: 'networkidle0' });
+        yield page.click("#submit_btn");
+        yield page.waitForNavigation({ waitUntil: "networkidle0" });
     });
 }
 function goToWsAndSaveCookies(page) {
@@ -90,7 +90,7 @@ function saveCookies(cookies) {
     return __awaiter(this, void 0, void 0, function* () {
         yield createFolderIfDoesntExist(COOKIES_FOLDER_PATH);
         const cks = {
-            cookies: cookies
+            cookies: cookies,
         };
         const cksStr = JSON.stringify(cks, null, 2);
         fs.writeFile(COOKIES_FILE_PATH, cksStr);
@@ -105,10 +105,10 @@ function createFolderIfDoesntExist(folderPath) {
             console.error(`${folderPath} directory doesn't exist.`);
             try {
                 yield fs.mkdir(folderPath);
-                console.log('Created directory:', folderPath);
+                console.log("Created directory:", folderPath);
             }
             catch (error) {
-                console.error('Failed to create directory.');
+                console.error("Failed to create directory.");
                 throw error;
             }
         }
